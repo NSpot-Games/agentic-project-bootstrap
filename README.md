@@ -6,14 +6,62 @@ one workflow, and one source of truth for progress. It fits new projects and exi
 codebases, solo weekend builds and multi-agent, multi-phase efforts, by picking a profile and a
 tier instead of assuming one fixed shape of project.
 
-Read `BOOTSTRAP.md` for the idea in one page and pointers into the rest of the kit; or, if your
-agent supports skills, invoke `skills/bootstrap/SKILL.md` and let it run the greenfield or
-brownfield procedure as a guided conversation, one design doc per session with a human review
-gate after each. Either way you end with the tier-appropriate files in place, a profile chosen,
-and a first session ready to open.
+The kit ships as one Agent Skill, `skills/project-bootstrap/`, that follows the
+[Agent Skills](https://agentskills.io) layout: the procedure in `SKILL.md`, the rules in
+`references/`, the templates in `assets/`, the linter in `scripts/`. Install it into your agent
+or just read it.
 
-The linter and generator, `tools/check_docs.py`, is Python 3.11+, standard library only: run
-`python tools/check_docs.py --root <path-to-your-project>` to check a project, add `--fix` to
-regenerate the four index files it owns, and see `tools/hooks/README.md` for wiring it into a
-Stop hook, a pre-commit hook, or CI. The kit's own test suite runs with
-`python -m pytest tools/tests -q`.
+## Install
+
+**Any agent, via the `skills` CLI** (Claude Code, Codex, Cursor, Gemini CLI, Copilot, Cline
+and others):
+
+```
+npx skills add NSpotGames/agentic-project-bootstrap
+```
+
+**Claude Code, as a plugin** (adds a Stop hook that runs the linter in projects built on the
+kit):
+
+```
+claude plugin marketplace add NSpotGames/agentic-project-bootstrap
+claude plugin install project-bootstrap@agentic-project-bootstrap
+```
+
+or `/plugin marketplace add NSpotGames/agentic-project-bootstrap` and
+`/plugin install project-bootstrap@agentic-project-bootstrap` inside a session.
+
+**By hand:** clone this repo and copy `skills/project-bootstrap/` into your agent's skills
+directory (`.claude/skills/`, `.agents/skills/`, `~/.codex/skills/`, or wherever it reads
+them). Or skip installing and hand your agent `BOOTSTRAP.md`.
+
+## Use
+
+Tell your agent to bootstrap the project. The skill classifies the repo as greenfield or
+brownfield, asks five setup questions, writes the design docs one per session with a review
+gate after each, generates the process files for the chosen tier, copies the linter into the
+project, and opens the first session. Without a skill-aware agent, read `BOOTSTRAP.md` for the
+idea in one page and follow `skills/project-bootstrap/references/core/adoption.md` by hand.
+
+Projects built on the kit run the linter and generator as
+`python tools/check_docs.py --root . --fix` at the end of every session. It is Python 3.11+,
+standard library only. `skills/project-bootstrap/scripts/hooks/README.md` shows how to run it
+from a Stop hook, a pre-commit hook, or CI.
+
+## Repository layout
+
+- `BOOTSTRAP.md` — the idea and the machinery, one page each, with pointers into the skill.
+- `skills/project-bootstrap/SKILL.md` — the guided procedure.
+- `skills/project-bootstrap/references/core/` — document kinds, layers, lifecycle,
+  long-horizon rules, parallel agents, tiers, adoption, lessons.
+- `skills/project-bootstrap/references/profiles/` — six project profiles and how to pick one.
+- `skills/project-bootstrap/assets/templates/` — the files a project copies in.
+- `skills/project-bootstrap/scripts/` — `check_docs.py` and hook snippets.
+- `tests/` — the linter's test suite and fixture project.
+- `.claude-plugin/`, `hooks/` — Claude Code plugin manifests and the plugin Stop hook.
+
+## Develop
+
+- `python -m pytest tests -q` — test suite.
+- `python skills/project-bootstrap/scripts/check_docs.py --root .` — lint this repo's own
+  docs; must report zero errors and zero warnings.
