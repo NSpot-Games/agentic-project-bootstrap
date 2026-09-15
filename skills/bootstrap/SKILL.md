@@ -38,26 +38,41 @@ Record each answer in a scratch list; write nothing to disk yet.
 
 Do not write any file until all five are answered.
 
-## 3. One design doc per session
+## 3. Brainstorm, design docs, roadmap — one document per session
 
-State the rule and the reason to the user: this skill writes at most one design doc per
-session, because a one-shot bootstrap that writes several docs back to back produces shallow
-docs — each later one gets less scrutiny than the last. Write the docs the chosen profile calls
-for (`profiles/<name>.md`), phase 1 only, in the order the profile lists.
+This section runs C1 through C8 of `core/adoption.md §1`, one session per step below, in
+order.
+
+**(a) Brainstorm (C1).** Hold this as its own session, with no file written: what the project
+is, who it's for, what's hard, what the real alternatives are, what will not be built. Push on
+the hardest technical constraint early. End the session with a list of decisions made and
+questions left open, held in the scratch list alongside C0's answers.
+
+**(b) Design docs (C2 through C7), one per session.** State the rule and the reason to the
+user: this skill writes at most one design doc per session, because a one-shot bootstrap that
+writes several docs back to back produces shallow docs — each later one gets less scrutiny
+than the last. Write the docs the chosen profile calls for (`profiles/<name>.md`), phase 1
+only, in the order the profile lists.
 
 After finishing each doc, stop and post exactly:
 
 > Review `<path>`. Say 'next' to continue or tell me what to change.
 
-Do not start the next doc, or move on to generation (§4), until the user replies.
+Do not start the next doc, or move on to the roadmap, until the user replies.
+
+**(c) Roadmap (C8), its own session.** Decide phase 1's exit, then the current and next
+milestones' goals and measurable exits; everything beyond those two is `sketch` — a goal
+sentence and nothing more. Write `<project>/docs/roadmap.md` from `templates/roadmap.md`, then
+apply the same review gate as (b): stop and post the message above. Do not move on to
+generation (§4) until the user replies.
 
 ## 4. Generation
 
-Once phase 1's design docs are written and reviewed, and the roadmap exists:
+Once the brainstorm, phase 1's design docs, and the roadmap are all written and reviewed:
 
 1. Copy the files `templates/` provides for the chosen tier into the project.
 2. Substitute every `{{token}}` using the table in `templates/README.md`; values come from C0's
-   answers and the design docs just written.
+   answers, the brainstorm's decisions, the design docs, and the roadmap just written.
 3. Create the phase 1 milestone files the rolling wave calls for: the current and next
    milestone `planned` with real exits, everything beyond `sketch`.
 4. Run `python tools/check_docs.py --root . --fix` and fix whatever it reports.
