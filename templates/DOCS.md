@@ -12,7 +12,7 @@ One line per file: path and purpose.
 | Decision | `docs/decisions/` | Why this over that | Never edited; superseded |
 | Direction | `docs/roadmap.md` | In what order, and what each phase must prove | At phase boundaries and milestone reviews |
 | Progress | `docs/milestones/`, `docs/plans/`, `docs/CURRENT.md` | What are we building now, what is done | Every session |
-| Reference | `DOCS.md`, `WORKFLOW.md`, `GLOSSARY.md`, `AGENTS.md`, `OPEN-QUESTIONS.md` | How we work, what words mean, what is unresolved | When the process changes |
+| Reference | `DOCS.md`, `docs/WORKFLOW.md`, `docs/GLOSSARY.md`, `AGENTS.md`, `docs/OPEN-QUESTIONS.md` | How we work, what words mean, what is unresolved | When the process changes |
 
 ## 3. Reading order
 New to the project: ... Starting a session: ... Making a design change: ...
@@ -23,7 +23,7 @@ New to the project: ... Starting a session: ... Making a design change: ...
 - Something to build → milestone feature line. Never a design doc.
 - How it's being built → the plan. Never a design doc or ADR.
 - A new term → GLOSSARY, same change.
-- An open question → OPEN-QUESTIONS.md. When answered → ADR, and remove it.
+- An open question → docs/OPEN-QUESTIONS.md. When answered → ADR, and remove it.
 - Measurements → docs/evidence/, linked from the milestone.
 - A phase or reordering → `roadmap.md`, with an ADR if the order changed for a reason.
 - Current focus → nothing; `CURRENT.md` is generated.
