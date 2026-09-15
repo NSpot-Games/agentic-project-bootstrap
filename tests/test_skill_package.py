@@ -108,12 +108,16 @@ def _run_stop(cwd: Path, stdin: str) -> subprocess.CompletedProcess:
 
 needs_sh = pytest.mark.skipif(shutil.which("sh") is None, reason="no sh on PATH")
 
+# Claude Code writes compact JSON (no space after the colon); the hook must recognize both.
+STOP_ACTIVE_JSON = ['{"stop_hook_active": true}', '{"stop_hook_active":true}']
+
 
 @needs_sh
-def test_stop_hook_exits_zero_when_stop_hook_active(tmp_path):
+@pytest.mark.parametrize("stdin", STOP_ACTIVE_JSON, ids=["spaced", "compact"])
+def test_stop_hook_exits_zero_when_stop_hook_active(tmp_path, stdin):
     (tmp_path / "tools").mkdir()
     (tmp_path / "tools" / "check_docs.py").write_text("import sys; sys.exit(1)\n", encoding="utf-8")
-    r = _run_stop(tmp_path, '{"stop_hook_active": true}')
+    r = _run_stop(tmp_path, stdin)
     assert r.returncode == 0, r.stderr
 
 
@@ -130,6 +134,52 @@ def test_stop_hook_blocks_when_project_linter_fails(tmp_path):
     r = _run_stop(tmp_path, "{}")
     assert r.returncode == 2
     assert "check_docs found errors" in r.stdout + r.stderr
+
+
+@needs_sh
+def test_stop_hook_blocks_when_stop_hook_active_is_false(tmp_path):
+    (tmp_path / "tools").mkdir()
+    (tmp_path / "tools" / "check_docs.py").write_text("import sys; sys.exit(1)\n", encoding="utf-8")
+    r = _run_stop(tmp_path, '{"stop_hook_active": false}')
+    assert r.returncode == 2
+    assert "check_docs found errors" in r.stdout + r.stderr
+
+
+@needs_sh
+def test_stop_hook_does_not_crash_on_non_json_stdin(tmp_path):
+    r = _run_stop(tmp_path, "")
+    assert r.returncode in (0, 2)
+
+
+PROJECT_STOP_SH = SKILL_DIR / "scripts" / "hooks" / "stop.sh"
+
+
+def _run_project_stop(cwd: Path, stdin: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["sh", str(PROJECT_STOP_SH)], input=stdin, capture_output=True, text=True, cwd=cwd)
+
+
+@needs_sh
+@pytest.mark.parametrize("stdin", STOP_ACTIVE_JSON, ids=["spaced", "compact"])
+def test_project_stop_hook_exits_zero_when_stop_hook_active(tmp_path, stdin):
+    (tmp_path / "tools").mkdir()
+    (tmp_path / "tools" / "check_docs.py").write_text("import sys; sys.exit(1)\n", encoding="utf-8")
+    r = _run_project_stop(tmp_path, stdin)
+    assert r.returncode == 0, r.stderr
+
+
+@needs_sh
+def test_project_stop_hook_blocks_when_stop_hook_active_is_false(tmp_path):
+    (tmp_path / "tools").mkdir()
+    (tmp_path / "tools" / "check_docs.py").write_text("import sys; sys.exit(1)\n", encoding="utf-8")
+    r = _run_project_stop(tmp_path, '{"stop_hook_active": false}')
+    assert r.returncode == 2
+    assert "check_docs found errors" in r.stdout + r.stderr
+
+
+@needs_sh
+def test_project_stop_hook_does_not_crash_on_non_json_stdin(tmp_path):
+    r = _run_project_stop(tmp_path, "")
+    assert r.returncode in (0, 2)
 
 
 def test_skill_directory_works_when_copied_alone(tmp_path):
