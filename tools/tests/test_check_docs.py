@@ -234,3 +234,41 @@ def test_w002_in_progress_plan_with_unticked_dependency(tmp_path):
         # M0 stays 'done' in this edit, so E007 fires; we only assert on W002 here
     })
     assert "W002" in codes(cd.run(root))
+
+
+def test_e005_tbd_in_design_doc(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/design/product-design.md": ("## Changelog", "## 4. Later\nTBD\n\n## Changelog"),
+    })
+    assert "E005" in codes(cd.run(root))
+
+
+def test_e005_template_brace_in_root_agents(tmp_path):
+    root = make_project(tmp_path, {"AGENTS.md": ("**Fixture**", "**{{Project}}**")})
+    assert "E005" in codes(cd.run(root))
+
+
+def test_e005_allowed_in_open_questions_and_sketch_sections(tmp_path):
+    root = make_project(tmp_path)   # fixture has TBD in OPEN-QUESTIONS and in sketch roadmap sections
+    assert "E005" not in codes(cd.run(root))
+
+
+def test_e005_tbd_in_active_roadmap_section(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/roadmap.md": ("Goal: the example instance runs in the runtime.", "Goal: TBD."),
+    })
+    assert "E005" in codes(cd.run(root))
+
+
+def test_e005_codename_placeholder(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/.check_docs.toml": ("stale_hours = 876000", 'stale_hours = 876000\ncodename_placeholder = "PROJECTNAME"'),
+        "docs/GLOSSARY.md": ("**Instance**", "**PROJECTNAME instance**"),
+    })
+    assert "E005" in codes(cd.run(root))
+
+
+def test_e005_not_applied_outside_docs_scope(tmp_path):
+    root = make_project(tmp_path)
+    (root / "CONTRIBUTING.md").write_text("TBD {{later}}\n", encoding="utf-8")
+    assert "E005" not in codes(cd.run(root))

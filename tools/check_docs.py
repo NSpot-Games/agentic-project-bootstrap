@@ -518,6 +518,42 @@ def check_dependencies(project: Project) -> list[Finding]:
     return out
 
 
+# --------------------------------------------------------------------------- checks: placeholders
+
+TBD_RE = re.compile(r"\bTBD\b")
+
+
+def _in_placeholder_scope(cfg: Config, relpath: str) -> bool:
+    return relpath.startswith("docs/") or relpath in PLACEHOLDER_SCOPE_ROOT_FILES
+
+
+def check_placeholders(project: Project) -> list[Finding]:
+    cfg = project.cfg
+    out: list[Finding] = []
+    allowed = [a.strip("/") for a in cfg.allow_tbd_in]
+    sketch = project.roadmap.sketch_ranges if project.roadmap else []
+    roadmap_rel = rel(cfg, project.roadmap.path) if project.roadmap else None
+    for path in project.md_files:
+        r = rel(cfg, path)
+        if not _in_placeholder_scope(cfg, r):
+            continue
+        if any(r == a or r.startswith(a + "/") for a in allowed):
+            continue
+        text = read_text(path)
+        if text.startswith(GENERATED_MARKER):
+            continue
+        for i, line in enumerate(text.split("\n"), start=1):
+            if r == roadmap_rel and any(a <= i <= b for a, b in sketch):
+                continue
+            if "{{" in line:
+                out.append(Finding("E005", r, i, "template placeholder '{{' left in doc"))
+            if TBD_RE.search(line):
+                out.append(Finding("E005", r, i, "TBD outside OPEN-QUESTIONS.md or a sketch section"))
+            if cfg.codename_placeholder and cfg.codename_placeholder in line:
+                out.append(Finding("E005", r, i, f"codename placeholder '{cfg.codename_placeholder}' left in doc"))
+    return out
+
+
 # --------------------------------------------------------------------------- run / main
 
 
@@ -533,6 +569,7 @@ def check(project: Project) -> list[Finding]:
     cfg = project.cfg
     findings: list[Finding] = []
     findings += check_citations(cfg, project.md_files)
+    findings += check_placeholders(project)
     if project.tier == "standard":
         findings += check_status_agreement(project)
         findings += check_dependencies(project)
