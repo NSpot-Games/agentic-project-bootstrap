@@ -135,6 +135,275 @@ def section_body(text: str, title: str) -> str:
     return m.group(1) if m else ""
 
 
+# --------------------------------------------------------------------------- model
+
+
+@dataclass
+class Feature:
+    id: str
+    title: str
+    ticked: bool
+    moved_to: str | None
+    plan_path: str | None
+    depends_on: list[str]
+    line: int
+
+
+@dataclass
+class Milestone:
+    id: str
+    path: Path
+    title: str
+    status: str
+    exit_criteria: str
+    evidence: str
+    depends_on: list[str]
+    features: list[Feature]
+
+    def feature(self, fid: str) -> Feature | None:
+        return next((f for f in self.features if f.id == fid), None)
+
+
+@dataclass
+class Plan:
+    id: str
+    path: Path
+    title: str
+    status: str
+    moved_to: str | None
+    milestone: str
+    depends_on: list[str]
+    stamps: list[tuple[datetime, str]]
+    last_note: str
+    tasks_open: int
+
+
+@dataclass
+class Adr:
+    number: str
+    path: Path
+    title: str
+    status: str
+
+
+@dataclass
+class Phase:
+    id: str
+    title: str
+    status: str
+    line: int
+    milestones: list[str] = field(default_factory=list)
+
+
+@dataclass
+class Roadmap:
+    path: Path
+    phases: list[Phase]
+    milestone_titles: dict[str, str]
+    sketch_ranges: list[tuple[int, int]]
+    order: list[str]
+
+
+@dataclass
+class Project:
+    cfg: Config
+    tier: str
+    md_files: list[Path]
+    milestones: dict[str, Milestone]
+    plans: dict[str, Plan]
+    adrs: list[Adr]
+    roadmap: Roadmap | None
+
+    def status_of(self, mid: str) -> str | None:
+        if mid in self.milestones:
+            return self.milestones[mid].status
+        if self.roadmap and mid in self.roadmap.milestone_titles:
+            return "sketch"
+        return None
+
+    def feature_of(self, fid: str) -> tuple[Milestone, Feature] | None:
+        for m in self.milestones.values():
+            f = m.feature(fid)
+            if f:
+                return m, f
+        return None
+
+    def milestone_order(self) -> list[str]:
+        ordered = list(self.roadmap.order) if self.roadmap else []
+        for mid in sorted(self.milestones, key=lambda s: int(s[1:])):
+            if mid not in ordered:
+                ordered.append(mid)
+        return ordered
+
+
+# --------------------------------------------------------------------------- parsers
+
+ID_LIST_RE = re.compile(r"\bM\d+(?:-\d+)?\b")
+FEATURE_RE = re.compile(
+    r"^- \[([ xX])\] (M\d+-\d+) — (.*?)(?: — `([^`]+)`)?(?: \(depends on: ([^)]*)\))?[ \t]*$", re.M
+)
+MOVED_FEATURE_RE = re.compile(r"^- ~~(M\d+-\d+) — (.*?)~~ moved to (M\d+-\d+)[ \t]*$", re.M)
+SESSION_RE = re.compile(r"^- (\S+)(?: — ([^—\n]*?))?(?: — ([^\n]*))?[ \t]*$", re.M)
+TASK_RE = re.compile(r"^- \[([ xX])\] T\d+", re.M)
+ADR_FILE_RE = re.compile(r"^(\d{4})-.+\.md$")
+
+
+def parse_ids(value: str | None) -> list[str]:
+    return ID_LIST_RE.findall(value or "")
+
+
+def _id_and_title(heading: str, pattern: str, fallback_id: str) -> tuple[str, str]:
+    m = re.match(rf"({pattern})\s+—\s+(.*)$", heading)
+    if m:
+        return m.group(1), m.group(2).strip()
+    return fallback_id, heading
+
+
+def parse_milestone(path: Path) -> Milestone:
+    text = read_text(path)
+    mid, title = _id_and_title(first_heading(text), r"M\d+", path.stem)
+    features: list[Feature] = []
+    for m in FEATURE_RE.finditer(text):
+        features.append(Feature(m.group(2), m.group(3).strip(), m.group(1) in "xX", None,
+                                m.group(4), parse_ids(m.group(5)), line_of(text, m.start())))
+    for m in MOVED_FEATURE_RE.finditer(text):
+        features.append(Feature(m.group(1), m.group(2).strip(), False, m.group(3), None, [],
+                                line_of(text, m.start())))
+    features.sort(key=lambda f: f.line)
+    return Milestone(
+        id=mid, path=path, title=title,
+        status=(field_value(text, "Status") or "").lower(),
+        exit_criteria=field_value(text, "Exit criteria") or "",
+        evidence=field_value(text, "Evidence of exit") or "",
+        depends_on=parse_ids(field_value(text, "Depends on")),
+        features=features,
+    )
+
+
+def parse_stamp(s: str) -> datetime | None:
+    s = s.strip()
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    try:
+        dt = datetime.fromisoformat(s)
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def parse_plan(path: Path) -> Plan:
+    text = read_text(path)
+    fallback = re.match(r"(M\d+-\d+)", path.stem)
+    pid, title = _id_and_title(first_heading(text), r"M\d+-\d+", fallback.group(1) if fallback else path.stem)
+    status_field = field_value(text, "Status") or ""
+    status_raw = status_field.lower()
+    moved_to = None
+    status = status_raw
+    if status_raw.startswith("moved"):
+        status = "moved"
+        ids = parse_ids(status_field) or parse_ids(field_value(text, "Moved to"))
+        moved_to = ids[0] if ids else None
+    stamps: list[tuple[datetime, str]] = []
+    for m in SESSION_RE.finditer(section_body(text, "Sessions")):
+        dt = parse_stamp(m.group(1))
+        if dt:
+            stamps.append((dt, (m.group(2) or "").strip()))
+    notes = [ln[2:].strip() for ln in section_body(text, "Progress notes").splitlines() if ln.startswith("- ")]
+    tasks_open = sum(1 for m in TASK_RE.finditer(section_body(text, "Tasks")) if m.group(1) == " ")
+    milestone = field_value(text, "Milestone") or pid.split("-")[0]
+    return Plan(pid, path, title, status, moved_to, milestone, parse_ids(field_value(text, "Depends on")),
+                stamps, notes[-1] if notes else "", tasks_open)
+
+
+def parse_adr(path: Path) -> Adr:
+    text = read_text(path)
+    number = ADR_FILE_RE.match(path.name).group(1)
+    title = re.sub(r"^\d{4}\.\s*", "", first_heading(text)) or path.stem
+    return Adr(number, path, title, (field_value(text, "Status") or "").lower())
+
+
+def parse_roadmap(path: Path) -> Roadmap:
+    text = read_text(path)
+    lines = text.split("\n")
+    heads = [(line_of(text, m.start()), len(m.group(1)), m.group(2).strip()) for m in HEADING_RE.finditer(text)]
+
+    def section_end(idx: int) -> int:
+        """Last line of the section including nested sub-headings."""
+        level = heads[idx][1]
+        for j in range(idx + 1, len(heads)):
+            if heads[j][1] <= level:
+                return heads[j][0] - 1
+        return len(lines)
+
+    def own_end(idx: int) -> int:
+        """Last line before the next heading of any level: the section's own body only."""
+        return heads[idx + 1][0] - 1 if idx + 1 < len(heads) else len(lines)
+
+    def status_in(start: int, end: int) -> str:
+        return (field_value("\n".join(lines[start - 1:end]), "Status") or "").lower()
+
+    phases: list[Phase] = []
+    titles: dict[str, str] = {}
+    sketch: list[tuple[int, int]] = []
+    order: list[str] = []
+    current: Phase | None = None
+    for i, (ln, level, title) in enumerate(heads):
+        pm = re.match(r"(P\d+)\s+—\s+(.*)$", title)
+        mm = re.match(r"(M\d+)\s+—\s+(.*)$", title)
+        end = section_end(i)
+        if pm:
+            current = Phase(pm.group(1), pm.group(2), status_in(ln, own_end(i)), ln)
+            phases.append(current)
+            if current.status == "sketch":
+                sketch.append((ln, end))
+        elif mm:
+            titles[mm.group(1)] = mm.group(2)
+            order.append(mm.group(1))
+            if current is not None and level > 2:
+                current.milestones.append(mm.group(1))
+            if status_in(ln, own_end(i)) == "sketch":
+                sketch.append((ln, end))
+        else:
+            current = None if level <= 2 else current
+    return Roadmap(path, phases, titles, sketch, order)
+
+
+# --------------------------------------------------------------------------- loader
+
+
+def detect_tier(cfg: Config) -> str:
+    if cfg.tier != "auto":
+        return cfg.tier
+    if (cfg.docs / "milestones").is_dir():
+        return "standard"
+    if (cfg.docs / "roadmap.md").is_file():
+        return "lite"
+    return "minimal"
+
+
+def load_project(cfg: Config) -> Project:
+    tier = detect_tier(cfg)
+    milestones: dict[str, Milestone] = {}
+    plans: dict[str, Plan] = {}
+    adrs: list[Adr] = []
+    roadmap: Roadmap | None = None
+    if tier == "standard":
+        for p in sorted((cfg.docs / "milestones").glob("M*.md")):
+            m = parse_milestone(p)
+            milestones[m.id] = m
+        for p in sorted((cfg.docs / "plans").rglob("M*-*.md")):
+            pl = parse_plan(p)
+            plans[pl.id] = pl
+    if tier in ("standard", "lite") and (cfg.docs / "roadmap.md").is_file():
+        roadmap = parse_roadmap(cfg.docs / "roadmap.md")
+    dec = cfg.docs / "decisions"
+    if dec.is_dir():
+        adrs = [parse_adr(p) for p in sorted(dec.glob("*.md")) if ADR_FILE_RE.match(p.name)]
+    return Project(cfg, tier, iter_md(cfg), milestones, plans, adrs, roadmap)
+
+
 # --------------------------------------------------------------------------- checks: citations
 
 
@@ -176,9 +445,14 @@ def run(root: Path, fix: bool = False, stale_hours: float | None = None) -> list
     cfg = load_config(Path(root))
     if stale_hours is not None:
         cfg.stale_hours = stale_hours
-    md_files = iter_md(cfg)
+    project = load_project(cfg)
+    return check(project)
+
+
+def check(project: Project) -> list[Finding]:
+    cfg = project.cfg
     findings: list[Finding] = []
-    findings += check_citations(cfg, md_files)
+    findings += check_citations(cfg, project.md_files)
     return findings
 
 
