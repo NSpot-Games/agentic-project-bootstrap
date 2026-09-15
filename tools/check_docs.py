@@ -5,7 +5,7 @@ Usage: check_docs.py [--fix] [--root PATH] [--stale-hours N]
 Exit status 1 if any E-code finding, else 0. Warnings (W-codes) print but pass.
 
 E011: a `.md` file is not valid UTF-8 and could not be read.
-E012: `docs/.check_docs.toml` is not valid TOML; defaults were used instead.
+E012: `docs/.check_docs.toml` is not valid TOML, or `citation_roots` is not a list of existing directories; defaults were used for the bad key.
 """
 from __future__ import annotations
 
@@ -57,6 +57,7 @@ class Config:
     stale_hours: float = 24
     allow_tbd_in: list[str] = field(default_factory=lambda: ["docs/OPEN-QUESTIONS.md"])
     citation_exclude: list[str] = field(default_factory=list)
+    citation_roots: list[str] = field(default_factory=list)
     exclude: list[str] = field(default_factory=lambda: list(DEFAULT_EXCLUDE))
     tier: str = "auto"
     config_error: str | None = None
@@ -73,13 +74,23 @@ def load_config(root: Path) -> Config:
         try:
             data = tomllib.loads(path.read_text(encoding="utf-8"))
         except tomllib.TOMLDecodeError as e:
-            cfg.config_error = str(e)
+            cfg.config_error = f"not valid TOML: {e}"
             return cfg
-        for key in ("codename_placeholder", "stale_hours", "allow_tbd_in", "citation_exclude", "tier"):
+        for key in ("codename_placeholder", "stale_hours", "allow_tbd_in", "citation_exclude",
+                    "citation_roots", "tier"):
             if key in data:
                 setattr(cfg, key, data[key])
         if "exclude" in data:
             cfg.exclude = list(DEFAULT_EXCLUDE) + list(data["exclude"])
+        roots = cfg.citation_roots
+        if not isinstance(roots, list) or not all(isinstance(r, str) for r in roots):
+            cfg.config_error = "citation_roots must be a list of strings"
+            cfg.citation_roots = []
+        else:
+            missing = [r for r in roots if not (cfg.root / r).is_dir()]
+            if missing:
+                cfg.config_error = f"citation_roots entry is not a directory: {missing[0]}"
+                cfg.citation_roots = [r for r in roots if r not in missing]
     return cfg
 
 
@@ -459,7 +470,8 @@ def load_project(cfg: Config) -> Project:
 
 
 def _resolve_citation(cfg: Config, citing: Path, target: str) -> Path | None:
-    for base in (citing.parent, cfg.root, cfg.docs):
+    bases = [citing.parent, cfg.root, cfg.docs] + [cfg.root / r for r in cfg.citation_roots]
+    for base in bases:
         cand = base / target
         if cand.is_file():
             return cand
@@ -828,7 +840,7 @@ def check(project: Project, now: datetime | None = None) -> list[Finding]:
     findings: list[Finding] = []
     if cfg.config_error:
         findings.append(Finding("E012", "docs/.check_docs.toml", 1,
-                                 f"config is not valid TOML: {cfg.config_error}"))
+                                 f"invalid config: {cfg.config_error}"))
     findings += project.load_errors
     findings += check_citations(cfg, project.md_files)
     findings += check_placeholders(project)

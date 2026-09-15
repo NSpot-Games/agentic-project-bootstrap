@@ -566,3 +566,61 @@ def test_evidence_ordered_numerically_not_lexically(tmp_path):
     (root / "docs/evidence/M10-exit.md").write_text("# M10 exit\n", encoding="utf-8")
     cur = cd.generate(cd.load_project(cd.load_config(root)))["docs/CURRENT.md"]
     assert cur.index("M2-exit.md") < cur.index("M10-exit.md")
+
+
+def _kit_layout(root: Path) -> None:
+    """A skill-like subtree whose files cite each other relative to that subtree."""
+    ref = root / "kit" / "ref"
+    ref.mkdir(parents=True)
+    (ref / "a.md").write_text("# A\n\n## 1. One\n\nSee `ref/b.md §2`.\n", encoding="utf-8", newline="\n")
+    (ref / "b.md").write_text("# B\n\n## 1. One\n\n## 2. Two\n", encoding="utf-8", newline="\n")
+
+
+def _add_config(root: Path, line: str) -> None:
+    cfg = root / "docs" / ".check_docs.toml"
+    cfg.write_text(cfg.read_text(encoding="utf-8") + "\n" + line + "\n", encoding="utf-8", newline="\n")
+
+
+def test_citation_roots_resolves_paths_under_listed_root(tmp_path):
+    root = make_project(tmp_path)
+    _kit_layout(root)
+    (root / "docs" / "note.md").write_text("See `ref/a.md §1` and `ref/b.md §2`.\n", encoding="utf-8", newline="\n")
+    _add_config(root, 'citation_roots = ["kit"]')
+    found = cd.run(root)
+    assert "E001" not in codes(found)
+    assert "E002" not in codes(found)
+    assert "E012" not in codes(found)
+
+
+def test_citation_roots_checks_anchor_against_resolved_file(tmp_path):
+    root = make_project(tmp_path)
+    _kit_layout(root)
+    (root / "docs" / "note.md").write_text("See `ref/b.md §9`.\n", encoding="utf-8", newline="\n")
+    _add_config(root, 'citation_roots = ["kit"]')
+    found = cd.run(root)
+    assert "E002" in codes(found)
+    assert "E001" not in codes(found)
+
+
+def test_citation_missing_from_root_and_all_citation_roots_is_e001(tmp_path):
+    root = make_project(tmp_path)
+    _kit_layout(root)
+    (root / "docs" / "note.md").write_text("See `ref/zzz.md`.\n", encoding="utf-8", newline="\n")
+    _add_config(root, 'citation_roots = ["kit"]')
+    found = cd.run(root)
+    assert "E001" in codes(found)
+
+
+def test_citation_roots_nonexistent_directory_is_e012(tmp_path):
+    root = make_project(tmp_path)
+    _add_config(root, 'citation_roots = ["no-such-dir"]')
+    found = cd.run(root)
+    e012 = [f for f in found if f.code == "E012"]
+    assert e012 and "no-such-dir" in e012[0].message
+
+
+def test_citation_roots_wrong_type_is_e012(tmp_path):
+    root = make_project(tmp_path)
+    _add_config(root, 'citation_roots = "kit"')
+    found = cd.run(root)
+    assert "E012" in codes(found)
