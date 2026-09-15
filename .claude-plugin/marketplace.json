@@ -1,0 +1,12 @@
+{
+  "name": "agentic-project-bootstrap",
+  "owner": { "name": "NSpotGames", "url": "https://github.com/NSpotGames" },
+  "plugins": [
+    {
+      "name": "project-bootstrap",
+      "source": "./",
+      "description": "Docs-as-contract bootstrap for agent-driven projects.",
+      "version": "2.1.0"
+    }
+  ]
+}
