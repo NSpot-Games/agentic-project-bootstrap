@@ -204,3 +204,33 @@ def test_e010_moved_pointer_unresolved(tmp_path):
         "docs/plans/M0/M0-02-old-thing.md": ("moved to M1-02", "moved to M1-77"),
     })
     assert "E010" in codes(cd.run(root))
+
+
+def test_e008_milestone_depends_on_sketch(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/milestones/M1.md": ("**Depends on:** M0", "**Depends on:** M0, M2"),
+    })
+    assert "E008" in codes(cd.run(root))
+
+
+def test_e008_feature_depends_on_unknown(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/milestones/M1.md": ("(depends on: M0-01)", "(depends on: M8-01)"),
+    })
+    assert "E008" in codes(cd.run(root))
+
+
+def test_e008_not_raised_for_dropped_milestone_itself(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/milestones/M1.md": ("**Status:** in progress", "**Status:** dropped"),
+    })
+    assert "E008" not in codes(cd.run(root))
+
+
+def test_w002_in_progress_plan_with_unticked_dependency(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/milestones/M0.md": ("- [x] M0-01", "- [ ] M0-01"),
+        "docs/plans/M0/M0-01-fold-schema-gaps.md": ("**Status:** done", "**Status:** in progress"),
+        # M0 stays 'done' in this edit, so E007 fires; we only assert on W002 here
+    })
+    assert "W002" in codes(cd.run(root))

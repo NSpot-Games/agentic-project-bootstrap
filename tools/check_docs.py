@@ -477,6 +477,47 @@ def check_status_agreement(project: Project) -> list[Finding]:
     return out
 
 
+# --------------------------------------------------------------------------- checks: dependencies
+
+
+def _dep_status(project: Project, dep: str) -> str | None:
+    """Status of the milestone that a dependency (M3 or M3-02) belongs to; None if unknown."""
+    if "-" in dep:
+        hit = project.feature_of(dep)
+        return hit[0].status if hit else None
+    return project.status_of(dep)
+
+
+def check_dependencies(project: Project) -> list[Finding]:
+    cfg = project.cfg
+    out: list[Finding] = []
+    for m in project.milestones.values():
+        if m.status not in ("planned", "in progress"):
+            continue
+        r = rel(cfg, m.path)
+        for dep in m.depends_on:
+            st = _dep_status(project, dep)
+            if st in (None, "sketch", "dropped"):
+                out.append(Finding("E008", r, 1, f"{m.id} depends on {dep} which is {st or 'unknown'}"))
+        for f in m.features:
+            for dep in f.depends_on:
+                st = _dep_status(project, dep)
+                if st in (None, "sketch", "dropped"):
+                    out.append(Finding("E008", r, f.line, f"{f.id} depends on {dep} which is {st or 'unknown'}"))
+    for pl in project.plans.values():
+        if pl.status != "in progress":
+            continue
+        hit = project.feature_of(pl.id)
+        deps = list(pl.depends_on) + (hit[1].depends_on if hit else [])
+        for dep in deps:
+            if "-" not in dep:
+                continue
+            target = project.feature_of(dep)
+            if target and not target[1].ticked:
+                out.append(Finding("W002", rel(cfg, pl.path), 1, f"{pl.id} is in progress but dependency {dep} is unticked"))
+    return out
+
+
 # --------------------------------------------------------------------------- run / main
 
 
@@ -494,6 +535,7 @@ def check(project: Project) -> list[Finding]:
     findings += check_citations(cfg, project.md_files)
     if project.tier == "standard":
         findings += check_status_agreement(project)
+        findings += check_dependencies(project)
     return findings
 
 
