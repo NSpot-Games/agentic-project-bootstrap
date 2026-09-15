@@ -575,6 +575,136 @@ def check_claims(project: Project, now: datetime | None = None) -> list[Finding]
     return out
 
 
+# --------------------------------------------------------------------------- generators
+
+
+def _plan_rel_for(project: Project, f: Feature) -> str | None:
+    if f.plan_path:
+        return f.plan_path
+    pl = project.plans.get(f.id)
+    return rel(project.cfg, pl.path) if pl else None
+
+
+def gen_milestones_index(project: Project) -> str:
+    lines = [GENERATED_MARKER, "# Milestones", "",
+             "| ID | Title | Status | Features done |", "|---|---|---|---|"]
+    for mid in project.milestone_order():
+        m = project.milestones.get(mid)
+        if m:
+            real = [f for f in m.features if not f.moved_to]
+            done = sum(1 for f in real if f.ticked)
+            lines.append(f"| {m.id} | {m.title} | {m.status} | {done}/{len(real)} |")
+        else:
+            title = project.roadmap.milestone_titles.get(mid, "") if project.roadmap else ""
+            lines.append(f"| {mid} | {title} | sketch | — |")
+    return "\n".join(lines) + "\n"
+
+
+def gen_plans_index(project: Project) -> str:
+    lines = [GENERATED_MARKER, "# Plans", ""]
+    for mid in project.milestone_order():
+        m = project.milestones.get(mid)
+        if not m:
+            continue
+        plans = sorted((p for p in project.plans.values() if p.milestone == mid), key=lambda p: p.id)
+        if not plans:
+            continue
+        lines += [f"## {mid} — {m.title}", ""]
+        active = [p for p in plans if p.status not in ("done", "moved", "superseded")]
+        closed = [p for p in plans if p.status in ("done", "moved", "superseded")]
+        for p in active:
+            lines.append(f"- {p.id} — {p.title} — `{rel(project.cfg, p.path)}` — {p.status}")
+        if closed:
+            lines += ["", "<details><summary>Closed</summary>", ""]
+            for p in closed:
+                extra = f" → {p.moved_to}" if p.moved_to else ""
+                lines.append(f"- {p.id} — {p.title} — `{rel(project.cfg, p.path)}` — {p.status}{extra}")
+            lines += ["", "</details>"]
+        lines.append("")
+    return "\n".join(lines).rstrip("\n") + "\n"
+
+
+def gen_decisions_index(project: Project) -> str:
+    lines = [GENERATED_MARKER, "# Architecture Decision Records", "",
+             "| # | Decision | Status |", "|---|---|---|"]
+    for a in project.adrs:
+        lines.append(f"| {a.number} | [{a.title}]({a.path.name}) | {a.status} |")
+    return "\n".join(lines) + "\n"
+
+
+def gen_current(project: Project) -> str:
+    cfg = project.cfg
+    lines = [GENERATED_MARKER, "# Current focus", ""]
+    active_phases = [p for p in (project.roadmap.phases if project.roadmap else []) if p.status == "active"]
+    if active_phases:
+        lines.append("**Phase:** " + "; ".join(f"{p.id} — {p.title}" for p in active_phases))
+    in_prog = [m for m in project.milestones.values() if m.status == "in progress"]
+    if in_prog:
+        lines.append("**Milestones in progress:** " + "; ".join(f"{m.id} — {m.title}" for m in in_prog))
+    lines.append("")
+    claimed = sorted((p for p in project.plans.values() if p.status == "in progress"), key=lambda p: p.id)
+    lines += ["## Claimed features", ""]
+    for p in claimed[:8]:
+        stamp = max(p.stamps)[0].strftime("%Y-%m-%dT%H:%MZ") + f" ({max(p.stamps)[1]})" if p.stamps else "no stamp"
+        note = f" — last note: {p.last_note}" if p.last_note else ""
+        lines.append(f"- {p.id} — {p.title} — `{rel(cfg, p.path)}` — {stamp}{note}")
+    if not claimed:
+        lines.append("- none")
+    blocked = sorted((p for p in project.plans.values() if p.status == "blocked"), key=lambda p: p.id)
+    if blocked:
+        lines += ["", "## Blocked", ""]
+        lines += [f"- {p.id} — {p.title} — `{rel(cfg, p.path)}`" for p in blocked[:8]]
+    nxt = []
+    for m in in_prog:
+        for f in m.features:
+            if f.ticked or f.moved_to:
+                continue
+            pl = project.plans.get(f.id)
+            if pl is None or pl.status in ("grounding", "planned"):
+                nxt.append(f"- {f.id} — {f.title}")
+    lines += ["", "## Next unclaimed features", ""]
+    lines += nxt[:8] or ["- none"]
+    ev_dir = cfg.docs / "evidence"
+    evidence = sorted(ev_dir.glob("*.md")) if ev_dir.is_dir() else []
+    if evidence:
+        lines += ["", "## Latest evidence", ""]
+        lines += [f"- `{rel(cfg, p)}`" for p in evidence[-3:]]
+    return "\n".join(lines) + "\n"
+
+
+def generate(project: Project) -> dict[str, str]:
+    out: dict[str, str] = {}
+    if project.tier == "standard":
+        out["docs/milestones/README.md"] = gen_milestones_index(project)
+        out["docs/plans/README.md"] = gen_plans_index(project)
+        out["docs/CURRENT.md"] = gen_current(project)
+    if project.tier in ("standard", "lite") and (project.cfg.docs / "decisions").is_dir():
+        out["docs/decisions/README.md"] = gen_decisions_index(project)
+    return out
+
+
+# --------------------------------------------------------------------------- checks: generated files
+
+
+def check_generated(project: Project) -> list[Finding]:
+    cfg = project.cfg
+    out: list[Finding] = []
+    for relp, expected in generate(project).items():
+        path = cfg.root / relp
+        actual = read_text(path) if path.is_file() else None
+        if relp.endswith("milestones/README.md"):
+            for row in expected.split("\n"):
+                if row.startswith("| M") and (actual is None or row not in actual):
+                    out.append(Finding("E003", relp, 1, f"milestone index missing or stale for row: {row}"))
+        elif relp.endswith("decisions/README.md"):
+            for a in project.adrs:
+                if actual is None or f"| {a.number} |" not in actual:
+                    out.append(Finding("E004", relp, 1, f"ADR {a.number} missing from index"))
+        if actual != expected and not any(f.path == relp and f.is_error for f in out):
+            out.append(Finding("W003", relp, 1, "generated file differs from --fix output; run check_docs.py --fix"))
+    return out
+
+
 # --------------------------------------------------------------------------- run / main
 
 
@@ -583,7 +713,14 @@ def run(root: Path, fix: bool = False, stale_hours: float | None = None) -> list
     if stale_hours is not None:
         cfg.stale_hours = stale_hours
     project = load_project(cfg)
-    return check(project)
+    findings = check(project)
+    if fix:
+        for relp, content in generate(project).items():
+            path = cfg.root / relp
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content, encoding="utf-8", newline="\n")
+        findings = [f for f in findings if f.code not in ("E003", "E004", "W003")]
+    return findings
 
 
 def check(project: Project, now: datetime | None = None) -> list[Finding]:
@@ -595,6 +732,7 @@ def check(project: Project, now: datetime | None = None) -> list[Finding]:
         findings += check_status_agreement(project)
         findings += check_dependencies(project)
         findings += check_claims(project, now)
+    findings += check_generated(project)
     return findings
 
 

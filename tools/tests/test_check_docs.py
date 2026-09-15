@@ -303,3 +303,89 @@ def test_w001_claim_without_stamp(tmp_path):
 def test_run_stale_hours_override(tmp_path):
     root = make_project(tmp_path)
     assert "W001" in codes(cd.run(root, stale_hours=0.001))
+
+
+GENERATED = ["docs/milestones/README.md", "docs/plans/README.md", "docs/decisions/README.md", "docs/CURRENT.md"]
+
+
+def test_generate_produces_four_files_with_marker(tmp_path):
+    root = make_project(tmp_path)
+    gen = cd.generate(cd.load_project(cd.load_config(root)))
+    assert sorted(gen) == sorted(GENERATED)
+    for content in gen.values():
+        assert content.startswith(cd.GENERATED_MARKER)
+
+
+def test_milestone_index_rows(tmp_path):
+    root = make_project(tmp_path)
+    gen = cd.generate(cd.load_project(cd.load_config(root)))
+    idx = gen["docs/milestones/README.md"]
+    assert "| M0 | Foundations | done | 1/1 |" in idx
+    assert "| M1 | First playable | in progress | 0/2 |" in idx
+    assert "| M2 | Authoring tool | sketch | — |" in idx
+    assert "| M3 | Ten instances | sketch | — |" in idx
+
+
+def test_current_md_content_and_length(tmp_path):
+    root = make_project(tmp_path)
+    cur = cd.generate(cd.load_project(cd.load_config(root)))["docs/CURRENT.md"]
+    assert "P1 — Playable core" in cur
+    assert "M1 — First playable" in cur
+    assert "M1-01 — Runtime loop — `docs/plans/M1/M1-01-runtime-loop.md`" in cur
+    assert "loader done; step function next." in cur
+    assert "M1-02 — Old thing, re-homed" in cur          # next unclaimed
+    assert "`docs/evidence/M0-exit.md`" in cur
+    assert len(cur.strip().split("\n")) < 40
+
+
+def test_plans_index_groups_and_collapses_done(tmp_path):
+    root = make_project(tmp_path)
+    idx = cd.generate(cd.load_project(cd.load_config(root)))["docs/plans/README.md"]
+    assert "## M1" in idx and "## M0" in idx
+    assert "<details>" in idx and "M0-01 — Fold schema gaps" in idx
+
+
+def test_e003_and_e004_when_indexes_missing(tmp_path):
+    root = make_project(tmp_path)
+    # the fixture now carries committed, up-to-date generated files (needed by the
+    # fixture-currency tests), so remove them here to exercise the missing-index case.
+    for relp in GENERATED:
+        (root / relp).unlink(missing_ok=True)
+    found = codes(cd.run(root))
+    assert "E003" in found and "E004" in found
+
+
+def test_fix_writes_files_and_clears_generated_findings(tmp_path):
+    root = make_project(tmp_path)
+    found = cd.run(root, fix=True)
+    assert not any(f.code in ("E003", "E004", "W003") for f in found)
+    for relp in GENERATED:
+        assert (root / relp).is_file()
+    # second run without --fix is clean and idempotent
+    again = cd.run(root)
+    assert not any(f.code in ("E003", "E004", "W003") for f in again)
+    before = {p: (root / p).read_text(encoding="utf-8") for p in GENERATED}
+    cd.run(root, fix=True)
+    after = {p: (root / p).read_text(encoding="utf-8") for p in GENERATED}
+    assert before == after
+
+
+def test_w003_on_stale_generated_file(tmp_path):
+    root = make_project(tmp_path)
+    cd.run(root, fix=True)
+    p = root / "docs/CURRENT.md"
+    p.write_text(p.read_text(encoding="utf-8") + "\nstale line\n", encoding="utf-8")
+    assert "W003" in codes(cd.run(root))
+
+
+def test_e003_on_wrong_status_in_index(tmp_path):
+    root = make_project(tmp_path)
+    cd.run(root, fix=True)
+    p = root / "docs/milestones/README.md"
+    p.write_text(p.read_text(encoding="utf-8").replace("| in progress |", "| done |"), encoding="utf-8")
+    assert "E003" in codes(cd.run(root))
+
+
+def test_valid_fixture_committed_generated_files_are_current():
+    # the fixture directory itself (not a copy) must carry up-to-date generated files
+    assert codes(cd.run(FIXTURE)) == []
