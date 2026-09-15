@@ -31,6 +31,9 @@ These files are copied into a new project during bootstrap and every double-brac
 | `{{NNNN}}` | Four-digit ADR number |
 | `{{decision_as_a_sentence}}` | ADR title |
 | `{{decision already stated in a design doc}}` | A decision to backfill into an ADR from an already-written design doc |
+| `{{source_section}}` | The design doc and section a backfilled decision comes from |
 | `{{files}}` | Related file paths cited in a design doc header |
+| `{{audience}}` | Who reads this doc, and why |
+| `{{three_sentences}}` | A project README's three sentences: what, for whom, current state |
 
 A template file has no `{{` left when copied into a project; the linter's E005 check enforces this.

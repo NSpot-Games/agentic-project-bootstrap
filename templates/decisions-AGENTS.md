@@ -21,4 +21,4 @@ See `adr.md`.
 ## Backfill list
 | # | Decision | Source |
 |---|---|---|
-| 0001 | {{decision already stated in a design doc}} | {{doc §}} |
+| 0001 | {{decision already stated in a design doc}} | {{source_section}} |
