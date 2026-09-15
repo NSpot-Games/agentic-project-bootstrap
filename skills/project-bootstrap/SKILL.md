@@ -12,7 +12,7 @@ the sections below in order; do not skip ahead to generation before the docs it 
 
 ## 1. Announce and classify
 
-Look at the target repository and say which of these it is, per `core/adoption.md §3`:
+Look at the target repository and say which of these it is, per `references/core/adoption.md §3`:
 
 - **Greenfield** — an empty repository, no code, nothing to recover.
 - **Brownfield** — any repository with real code in it, even rough or partial, or with code but
@@ -30,17 +30,17 @@ Record each answer in a scratch list; write nothing to disk yet.
    then break every cross-reference the first time something is reordered.
 3. **Example location.** Where will the example instance live — `<project>/cases/<id>/`,
    `<project>/fixtures/`, or similar? The architecture doc will cite it.
-4. **Tier.** Recommend one from `core/tiers.md`, based on scope: solo, one phase, under ten
+4. **Tier.** Recommend one from `references/core/tiers.md`, based on scope: solo, one phase, under ten
    features suggests lite; most projects land on standard; multi-phase, multi-agent, or
    regulated suggests full.
-5. **Profile.** Recommend one from `profiles/README.md`, based on the project's central
+5. **Profile.** Recommend one from `references/profiles/README.md`, based on the project's central
    artefact.
 
 Do not write any file until all five are answered.
 
 ## 3. Brainstorm, design docs, roadmap — one document per session
 
-This section runs C1 through C8 of `core/adoption.md §1`, one session per step below, in
+This section runs C1 through C8 of `references/core/adoption.md §1`, one session per step below, in
 order.
 
 **(a) Brainstorm (C1).** Hold this as its own session, with no file written: what the project
@@ -51,7 +51,7 @@ questions left open, held in the scratch list alongside C0's answers.
 **(b) Design docs (C2 through C7), one per session.** State the rule and the reason to the
 user: this skill writes at most one design doc per session, because a one-shot bootstrap that
 writes several docs back to back produces shallow docs — each later one gets less scrutiny
-than the last. Write the docs the chosen profile calls for (`profiles/<name>.md`), phase 1
+than the last. Write the docs the chosen profile calls for (`references/profiles/<name>.md`), phase 1
 only, in the order the profile lists.
 
 After finishing each doc, stop and post exactly:
@@ -62,7 +62,7 @@ Do not start the next doc, or move on to the roadmap, until the user replies.
 
 **(c) Roadmap (C8), its own session.** Decide phase 1's exit, then the current and next
 milestones' goals and measurable exits; everything beyond those two is `sketch` — a goal
-sentence and nothing more. Write `<project>/docs/roadmap.md` from `templates/roadmap.md`, then
+sentence and nothing more. Write `<project>/docs/roadmap.md` from `assets/templates/roadmap.md`, then
 apply the same review gate as (b): stop and post the message above. Do not move on to
 generation (§4) until the user replies.
 
@@ -70,8 +70,8 @@ generation (§4) until the user replies.
 
 Once the brainstorm, phase 1's design docs, and the roadmap are all written and reviewed:
 
-1. Copy the files `templates/` provides for the chosen tier into the project.
-2. Substitute every `{{token}}` using the table in `templates/README.md`; values come from C0's
+1. Copy the files `assets/templates/` provides for the chosen tier into the project.
+2. Substitute every `{{token}}` using the table in `assets/templates/README.md`; values come from C0's
    answers, the brainstorm's decisions, the design docs, and the roadmap just written.
 3. Create the milestone files for the current and next milestone; everything beyond stays
    `sketch` in the roadmap only.
@@ -83,7 +83,7 @@ Open `<project>/docs/CURRENT.md` and claim `M0-01`. Follow `<project>/docs/WORKF
 
 ## 6. Brownfield variant
 
-Follow the seven steps of `core/adoption.md §2`, in order: inventory; reverse-engineer the
+Follow the seven steps of `references/core/adoption.md §2`, in order: inventory; reverse-engineer the
 architecture doc from the code; recover the data model and an anonymised example instance;
 backfill ADRs from git history; write the design doc as a vision-and-current-state document;
 build the roadmap from the issue tracker; generate, lint, and open on a feature named "close

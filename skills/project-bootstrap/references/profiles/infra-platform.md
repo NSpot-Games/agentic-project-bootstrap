@@ -16,7 +16,7 @@ The central artefact is environments and the SLOs they must hold.
 | `<project>/docs/runbooks/<scenario>.md` | purpose and audience; standard operating procedures, one per scenario; incident-response steps; escalation paths; rollback and recovery procedures | when a real environment first exists |
 | `<project>/docs/design/security.md` | threat model summary; identity and access management; network security boundaries; secrets and key rotation; audit logging | bootstrap |
 
-Runbooks are Reference kind, not Design kind (`core/doc-kinds.md §2`): they carry no design-doc header and no `## Changelog`, live under `<project>/docs/runbooks/` rather than `<project>/docs/design/`, and are cited from the service design doc. They are written when a real environment first exists — this is an artifact trigger, not a phase boundary; a Standard-tier project (this profile's default, `§5`) has no second phase to become `active` (`core/tiers.md §4`). On a Full-tier project this usually coincides with the phase that stands up that environment becoming `active` (`core/tiers.md §4`). The other four docs are written at bootstrap.
+Runbooks are Reference kind, not Design kind (`references/core/doc-kinds.md §2`): they carry no design-doc header and no `## Changelog`, live under `<project>/docs/runbooks/` rather than `<project>/docs/design/`, and are cited from the service design doc. They are written when a real environment first exists — this is an artifact trigger, not a phase boundary; a Standard-tier project (this profile's default, `§5`) has no second phase to become `active` (`references/core/tiers.md §4`). On a Full-tier project this usually coincides with the phase that stands up that environment becoming `active` (`references/core/tiers.md §4`). The other four docs are written at bootstrap.
 
 ## 3. Vocabulary
 
@@ -33,7 +33,7 @@ Example instance: one environment definition — a complete, real environment (d
 
 ## 5. Default tier and M0
 
-Default tier: Standard (`core/tiers.md §3`). M0 is nearly always: fold the gaps the environment definition surfaced back into the environment and config schema, before provisioning a second environment.
+Default tier: Standard (`references/core/tiers.md §3`). M0 is nearly always: fold the gaps the environment definition surfaced back into the environment and config schema, before provisioning a second environment.
 
 ## 6. Suggested non-goals
 

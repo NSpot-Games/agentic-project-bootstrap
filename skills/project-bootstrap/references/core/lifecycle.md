@@ -26,7 +26,7 @@ The promotion rule: if a small change grows past one commit, it is no longer sma
 
 ## 4. Experiments
 
-Under the data-ml profile, a feature is often an experiment rather than a build. An experiment that closes with a negative result still closes `done` — a negative result is evidence, not a failed feature, and the milestone that measured it succeeded at measuring, even though the hypothesis did not hold. The evidence file (`templates/evidence.md`) records what was measured, how, and the result, whichever way it came out; the roadmap review (`core/long-horizon.md §4`) reads that evidence when deciding what to plan next.
+Under the data-ml profile, a feature is often an experiment rather than a build. An experiment that closes with a negative result still closes `done` — a negative result is evidence, not a failed feature, and the milestone that measured it succeeded at measuring, even though the hypothesis did not hold. The evidence file (`assets/templates/evidence.md`) records what was measured, how, and the result, whichever way it came out; the roadmap review (`references/core/long-horizon.md §4`) reads that evidence when deciding what to plan next.
 
 ## 5. Close in detail
 
@@ -36,4 +36,4 @@ Under the data-ml profile, a feature is often an experiment rather than a build.
 4. ADRs opened during the feature are reviewed; a `proposed` ADR does not block Close unless it is marked `**Blocking:** yes`.
 5. The feature's checkbox is ticked in the milestone file, and the plan's status is set to `done`.
 6. Run `tools/check_docs.py --fix` and commit the regenerated indexes alongside the rest of the change.
-7. If this is the milestone's last feature, run the roadmap review checklist (`core/long-horizon.md §4`) before ending the session.
+7. If this is the milestone's last feature, run the roadmap review checklist (`references/core/long-horizon.md §4`) before ending the session.

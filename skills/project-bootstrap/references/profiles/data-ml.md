@@ -16,7 +16,7 @@ The central artefact is datasets and the metrics computed over them.
 | `<project>/docs/design/architecture.md` | pipeline stages (ingest, train, evaluate, serve); the key interfaces as code; data flow with a latency and throughput budget; persistence (artifacts, checkpoints); testing strategy; a "decisions we're committing to" list | bootstrap |
 | `<project>/docs/design/model-card.md` | intended use and out-of-scope use; a training-data summary; evaluation results (the eval runs); known limitations and failure modes; maintenance and retraining triggers | phase start |
 
-The model card is written when a first trained model exists to describe — this is an artifact trigger, not a phase boundary; a Standard-tier project (this profile's default, `§5`) has no second phase to become `active` (`core/tiers.md §4`). The other four are written at bootstrap because the metric, the schema, and the protocol have to exist before the first experiment runs. On a Full-tier project this usually coincides with the phase that trains that model becoming `active` (`core/tiers.md §4`).
+The model card is written when a first trained model exists to describe — this is an artifact trigger, not a phase boundary; a Standard-tier project (this profile's default, `§5`) has no second phase to become `active` (`references/core/tiers.md §4`). The other four are written at bootstrap because the metric, the schema, and the protocol have to exist before the first experiment runs. On a Full-tier project this usually coincides with the phase that trains that model becoming `active` (`references/core/tiers.md §4`).
 
 ## 3. Vocabulary
 
@@ -27,7 +27,7 @@ The model card is written when a first trained model exists to describe — this
 | evidence | eval run |
 | example instance | labelled sample set |
 
-IDs stay `M<n>-<nn>` (`core/layers.md §1`); only the word used in prose changes. An experiment that closes with a negative result still closes `done` (`core/lifecycle.md §4`) — a negative result is evidence, not a failed feature.
+IDs stay `M<n>-<nn>` (`references/core/layers.md §1`); only the word used in prose changes. An experiment that closes with a negative result still closes `done` (`references/core/lifecycle.md §4`) — a negative result is evidence, not a failed feature.
 
 ## 4. Example instance and evidence
 
@@ -35,7 +35,7 @@ Example instance: one labelled sample set — a real, representative set of labe
 
 ## 5. Default tier and M0
 
-Default tier: Standard (`core/tiers.md §3`). M0 is nearly always: fold the gaps the labelled sample set surfaced back into the data model, before running the first real experiment.
+Default tier: Standard (`references/core/tiers.md §3`). M0 is nearly always: fold the gaps the labelled sample set surfaced back into the data model, before running the first real experiment.
 
 ## 6. Suggested non-goals
 

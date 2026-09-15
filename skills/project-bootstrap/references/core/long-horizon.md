@@ -12,11 +12,11 @@ Each phase states what it must prove and how that is measured. The design doc's 
 
 ## 3. Design docs by phase
 
-Bootstrap writes the vision, the core data model, the architecture skeleton, and one example instance covering phase 1 only. Each later phase, when it becomes `active`, gets the per-area design docs it needs under `<project>/docs/design/<area>/` and a new example instance exercising the systems that phase adds. A design doc written before its phase is active is `draft` and says so in its header (`core/doc-kinds.md §3`).
+Bootstrap writes the vision, the core data model, the architecture skeleton, and one example instance covering phase 1 only. Each later phase, when it becomes `active`, gets the per-area design docs it needs under `<project>/docs/design/<area>/` and a new example instance exercising the systems that phase adds. A design doc written before its phase is active is `draft` and says so in its header (`references/core/doc-kinds.md §3`).
 
 ## 4. Re-planning cadence
 
-The Close step of a milestone's last feature includes a roadmap review (`core/lifecycle.md §5`, item 7), run in this order:
+The Close step of a milestone's last feature includes a roadmap review (`references/core/lifecycle.md §5`, item 7), run in this order:
 
 1. Check the milestone's exit criteria against the evidence collected.
 2. Promote the next `sketch` milestone to `planned` with a real, measurable exit.
@@ -26,7 +26,7 @@ The Close step of a milestone's last feature includes a roadmap review (`core/li
 
 ## 5. Milestone size
 
-Three to ten features per milestone, exit demonstrable in a single session by someone who did not build it; larger is split, smaller is folded into a neighbour. The full rule and its ID consequences are in `core/layers.md §5` and `core/layers.md §2`.
+Three to ten features per milestone, exit demonstrable in a single session by someone who did not build it; larger is split, smaller is folded into a neighbour. The full rule and its ID consequences are in `references/core/layers.md §5` and `references/core/layers.md §2`.
 
 ## 6. Dependencies
 

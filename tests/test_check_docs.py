@@ -10,7 +10,7 @@ import check_docs as cd
 
 FIXTURE = Path(__file__).parent / "fixture" / "valid"
 
-CHECK = Path(__file__).resolve().parents[1] / "check_docs.py"
+CHECK = Path(__file__).resolve().parents[1] / "skills" / "project-bootstrap" / "scripts" / "check_docs.py"
 
 
 def make_project(tmp_path: Path, edits: dict[str, tuple[str, str]] | None = None) -> Path:

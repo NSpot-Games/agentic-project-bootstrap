@@ -41,7 +41,7 @@ Example instance: one full, real instance of the data model, authored in the act
 
 ## 5. Default tier and M0
 
-Default tier: Standard (`core/tiers.md §3`). M0 is nearly always: fold the schema gaps the example instance surfaced back into the data model — closing them before the rest of the project builds on a schema that has already met reality once (`core/adoption.md §1`, C11).
+Default tier: Standard (`references/core/tiers.md §3`). M0 is nearly always: fold the schema gaps the example instance surfaced back into the data model — closing them before the rest of the project builds on a schema that has already met reality once (`references/core/adoption.md §1`, C11).
 
 ## 6. Suggested non-goals
 
@@ -55,5 +55,5 @@ A design doc without a stated non-goals section gets built past its intended sco
 ## 7. Profile-specific lessons
 
 1. Write the example instance before the runtime or architecture docs. It exposes missing fields, hand-waved rules, and ambiguous expressions in one sitting, in a way reasoning about the schema in the abstract never does.
-2. Decide the codename and file-naming convention before writing anything (`core/adoption.md §1`, C0). A mid-project rename touches every doc that names the product.
+2. Decide the codename and file-naming convention before writing anything (`references/core/adoption.md §1`, C0). A mid-project rename touches every doc that names the product.
 3. Name the least important system explicitly and order it late — the most visually impressive part of a data-driven product is rarely the one that proves the core loop.

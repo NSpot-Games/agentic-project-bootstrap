@@ -28,7 +28,7 @@ An agent's session carries no memory into the next one. Everything it knows abou
 
 ## 3. Design doc rules
 
-Every design doc opens with the header from `templates/design-header.md`: an H1 title, then one line carrying `**Project:**`, `**Status:**`, and `**Audience:**`, then a `Related:` line naming the other docs it depends on, then a rule before the body starts.
+Every design doc opens with the header from `assets/templates/design-header.md`: an H1 title, then one line carrying `**Project:**`, `**Status:**`, and `**Audience:**`, then a `Related:` line naming the other docs it depends on, then a rule before the body starts.
 
 Status is exactly one of `draft`, `stable`, or `living`. `draft` means the doc is ahead of the phase it describes and may still change on first contact with the work; `stable` means the described part is built and the doc is deliberately maintained; `living` means the doc is expected to change often as understanding improves (a glossary-adjacent design area, for example) and a changelog entry is still required per change.
 
@@ -40,7 +40,7 @@ A citation to a document whose exact name is not fixed yet (a doc that will exis
 
 ## 4. Where things go
 
-Restated in every project's own `<project>/DOCS.md` (see `templates/DOCS.md §4`), so it is worth stating once here too:
+Restated in every project's own `<project>/DOCS.md` (see `assets/templates/DOCS.md §4`), so it is worth stating once here too:
 
 - A new rule → the design doc. If it contradicts the doc, that is a design change: update it, and add an ADR if the change is hard to reverse.
 - A choice between alternatives → an ADR, plus a one-line pointer from the design doc.
@@ -50,4 +50,4 @@ Restated in every project's own `<project>/DOCS.md` (see `templates/DOCS.md §4`
 - An open question → `<project>/docs/OPEN-QUESTIONS.md`. Once answered → an ADR, and the entry is removed.
 - A measurement → the evidence directory, linked from the milestone it supports.
 - A phase or a reordering → the roadmap, with an ADR if the order changed for a stated reason.
-- Current focus → nowhere by hand; `<project>/docs/CURRENT.md` is generated (`core/long-horizon.md §7`).
+- Current focus → nowhere by hand; `<project>/docs/CURRENT.md` is generated (`references/core/long-horizon.md §7`).

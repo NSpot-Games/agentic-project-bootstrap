@@ -15,7 +15,7 @@ The central artefact is a public API surface other code calls.
 | `<project>/docs/design/architecture.md` | repo layout (packages, build targets); the key internal interfaces as code; data flow for the main call path with a performance budget; dependency policy (what's vendored, what's external); testing strategy (unit, integration, golden examples); a "decisions we're committing to" list | bootstrap |
 | `<project>/docs/design/versioning-and-compat.md` | the versioning scheme; compatibility guarantees per stability tier; the deprecation process and timeline; breaking-change policy; the release checklist | phase start |
 
-Versioning and compat is written when the API surface first stabilizes enough to promise something about — this is an artifact trigger, not a phase boundary; a Standard-tier project (this profile's default, `§5`) has no second phase to become `active` (`core/tiers.md §4`). The other three are written at bootstrap. On a Full-tier project this usually coincides with the phase that ships the first stable release becoming `active` (`core/tiers.md §4`).
+Versioning and compat is written when the API surface first stabilizes enough to promise something about — this is an artifact trigger, not a phase boundary; a Standard-tier project (this profile's default, `§5`) has no second phase to become `active` (`references/core/tiers.md §4`). The other three are written at bootstrap. On a Full-tier project this usually coincides with the phase that ships the first stable release becoming `active` (`references/core/tiers.md §4`).
 
 ## 3. Vocabulary
 
@@ -26,7 +26,7 @@ Versioning and compat is written when the API surface first stabilizes enough to
 | runtime | execution model |
 | milestone | release |
 
-IDs stay `M<n>` and `M<n>-<nn>` (`core/layers.md §1`); only the word used in prose changes — the roadmap runs by version, and milestones map to releases.
+IDs stay `M<n>` and `M<n>-<nn>` (`references/core/layers.md §1`); only the word used in prose changes — the roadmap runs by version, and milestones map to releases.
 
 ## 4. Example instance and evidence
 
@@ -34,7 +34,7 @@ Example instance: golden usage examples that are also tests — real calling cod
 
 ## 5. Default tier and M0
 
-Default tier: Standard (`core/tiers.md §3`). M0 is nearly always: fold the gaps the golden examples surfaced back into the API surface, before writing the versioning-and-compat doc.
+Default tier: Standard (`references/core/tiers.md §3`). M0 is nearly always: fold the gaps the golden examples surfaced back into the API surface, before writing the versioning-and-compat doc.
 
 ## 6. Suggested non-goals
 
@@ -48,5 +48,5 @@ Starting categories to confirm or replace during Brainstorm:
 ## 7. Profile-specific lessons
 
 1. A golden usage example that isn't also a test rots the day someone changes the API surface without noticing.
-2. Version the API surface doc itself — a breaking change to the surface is a design change with a changelog entry, same as any other design doc (`core/doc-kinds.md §3`).
+2. Version the API surface doc itself — a breaking change to the surface is a design change with a changelog entry, same as any other design doc (`references/core/doc-kinds.md §3`).
 3. Benchmarks without a stated baseline are just numbers; record what they're being compared against.

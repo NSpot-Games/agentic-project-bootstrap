@@ -1,4 +1,5 @@
-# Config for running tools/check_docs.py on this kit's own repo.
+# Config for running the kit's own linter on this repo.
+citation_roots = ["skills/project-bootstrap"]
 allow_tbd_in = ["docs/superpowers/"]
-citation_exclude = ["templates/", "tools/tests/fixture/", "docs/superpowers/"]
-exclude = ["tools/tests/fixture", ".superpowers"]
+citation_exclude = ["skills/project-bootstrap/assets/templates/", "tests/fixture/", "docs/superpowers/"]
+exclude = ["tests/fixture", ".superpowers"]

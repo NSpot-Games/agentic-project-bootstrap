@@ -16,7 +16,7 @@ The central artefact is tenants and the journeys they take through a shared prod
 | `<project>/docs/design/security-and-privacy.md` | threat model summary; authentication and authorization approach; tenant-isolation guarantees; data retention and deletion; secrets and key management; open questions | bootstrap |
 | `<project>/docs/design/deployment-and-observability.md` | environments and the promotion path between them; the deployment pipeline; logging, metrics, and tracing; alerting and on-call; rollback strategy | phase start |
 
-Deployment and observability is written when a real deployment target first exists — this is an artifact trigger, not a phase boundary; a Standard-tier project (this profile's default, `§5`) has no second phase to become `active` (`core/tiers.md §4`). The other four are written at bootstrap because tenancy and security decisions here are hard to reverse. On a Full-tier project this usually coincides with the phase that ships that deployment target becoming `active` (`core/tiers.md §4`).
+Deployment and observability is written when a real deployment target first exists — this is an artifact trigger, not a phase boundary; a Standard-tier project (this profile's default, `§5`) has no second phase to become `active` (`references/core/tiers.md §4`). The other four are written at bootstrap because tenancy and security decisions here are hard to reverse. On a Full-tier project this usually coincides with the phase that ships that deployment target becoming `active` (`references/core/tiers.md §4`).
 
 ## 3. Vocabulary
 
@@ -34,7 +34,7 @@ Example instance: a seed fixture for one tenant — one full, real tenant's data
 
 ## 5. Default tier and M0
 
-Default tier: Standard (`core/tiers.md §3`). M0 is nearly always: fold the gaps the seed fixture surfaced back into the data model, before building past one tenant.
+Default tier: Standard (`references/core/tiers.md §3`). M0 is nearly always: fold the gaps the seed fixture surfaced back into the data model, before building past one tenant.
 
 ## 6. Suggested non-goals
 
