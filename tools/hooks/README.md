@@ -40,4 +40,4 @@ Run `python tools/check_docs.py --root .` as a step. It exits 1 on any E-code.
 
 ## Regenerating indexes
 
-`python tools/check_docs.py --root . --fix` rewrites `docs/milestones/README.md`, `docs/plans/README.md`, `docs/decisions/README.md`, and `docs/CURRENT.md`. Run it at the end of every session and commit the result. Never edit those four files by hand.
+`python tools/check_docs.py --root . --fix` rewrites `<project>/docs/milestones/README.md`, `<project>/docs/plans/README.md`, `<project>/docs/decisions/README.md`, and `<project>/docs/CURRENT.md`. Run it at the end of every session and commit the result. Never edit those four files by hand.
