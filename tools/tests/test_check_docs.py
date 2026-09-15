@@ -1,4 +1,6 @@
 import shutil
+import subprocess
+import sys as _sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -7,6 +9,8 @@ import pytest
 import check_docs as cd
 
 FIXTURE = Path(__file__).parent / "fixture" / "valid"
+
+CHECK = Path(__file__).resolve().parents[1] / "check_docs.py"
 
 
 def make_project(tmp_path: Path, edits: dict[str, tuple[str, str]] | None = None) -> Path:
@@ -389,3 +393,50 @@ def test_e003_on_wrong_status_in_index(tmp_path):
 def test_valid_fixture_committed_generated_files_are_current():
     # the fixture directory itself (not a copy) must carry up-to-date generated files
     assert codes(cd.run(FIXTURE)) == []
+
+
+def test_cli_exit_zero_on_valid(tmp_path):
+    root = make_project(tmp_path)
+    r = subprocess.run([_sys.executable, str(CHECK), "--root", str(root)], capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "0 error(s)" in r.stdout
+
+
+def test_cli_exit_one_on_error(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/WORKFLOW.md": ("`docs/design/product-design.md §3`", "`docs/design/missing.md`"),
+    })
+    r = subprocess.run([_sys.executable, str(CHECK), "--root", str(root)], capture_output=True, text=True)
+    assert r.returncode == 1
+    assert "E001" in r.stdout
+
+
+def test_cli_warnings_do_not_fail(tmp_path):
+    root = make_project(tmp_path)
+    r = subprocess.run([_sys.executable, str(CHECK), "--root", str(root), "--stale-hours", "0.001"],
+                       capture_output=True, text=True)
+    assert r.returncode == 0 and "W001" in r.stdout
+
+
+def test_lite_tier_runs_only_lite_checks(tmp_path):
+    root = make_project(tmp_path)
+    shutil.rmtree(root / "docs" / "milestones")
+    shutil.rmtree(root / "docs" / "plans")
+    (root / "docs" / "CURRENT.md").unlink()
+    (root / "docs" / "roadmap.md").write_text(
+        "# Roadmap\n## P1 — Only phase\n**Status:** active\n- [x] Do the thing\n- [ ] Do the other thing\n",
+        encoding="utf-8")
+    found = cd.run(root)
+    assert not any(f.code in ("E003", "E006", "E007", "E008", "E009", "E010", "W001", "W002") for f in found)
+    assert set(cd.generate(cd.load_project(cd.load_config(root)))) == {"docs/decisions/README.md"}
+
+
+def test_minimal_tier_only_citations_and_placeholders(tmp_path):
+    root = tmp_path / "kit"
+    (root / "docs").mkdir(parents=True)
+    (root / "README.md").write_text("See `GUIDE.md §1`.\n", encoding="utf-8")
+    (root / "GUIDE.md").write_text("# Guide\n## 1. Intro\nTBD is fine here: not in docs scope.\n", encoding="utf-8")
+    (root / "docs" / "notes.md").write_text("TBD\n", encoding="utf-8")
+    found = cd.run(root)
+    assert codes(found) == ["E005"]
+    assert cd.generate(cd.load_project(cd.load_config(root))) == {}
