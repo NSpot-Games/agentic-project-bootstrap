@@ -3,6 +3,9 @@
 
 Usage: check_docs.py [--fix] [--root PATH] [--stale-hours N]
 Exit status 1 if any E-code finding, else 0. Warnings (W-codes) print but pass.
+
+E011: a `.md` file is not valid UTF-8 and could not be read.
+E012: `docs/.check_docs.toml` is not valid TOML; defaults were used instead.
 """
 from __future__ import annotations
 
@@ -21,6 +24,15 @@ ACTIVE_MILESTONE_STATUSES = ("planned", "in progress", "done")
 
 
 # --------------------------------------------------------------------------- data
+
+
+class UnreadableFile(Exception):
+    """Raised by read_text when a file cannot be decoded as UTF-8."""
+
+    def __init__(self, path: Path, reason: str):
+        self.path = path
+        self.reason = reason
+        super().__init__(f"{path}: {reason}")
 
 
 @dataclass
@@ -47,6 +59,7 @@ class Config:
     citation_exclude: list[str] = field(default_factory=list)
     exclude: list[str] = field(default_factory=lambda: list(DEFAULT_EXCLUDE))
     tier: str = "auto"
+    config_error: str | None = None
 
     @property
     def docs(self) -> Path:
@@ -57,7 +70,11 @@ def load_config(root: Path) -> Config:
     cfg = Config(root=Path(root))
     path = cfg.docs / ".check_docs.toml"
     if path.exists():
-        data = tomllib.loads(path.read_text(encoding="utf-8"))
+        try:
+            data = tomllib.loads(path.read_text(encoding="utf-8"))
+        except tomllib.TOMLDecodeError as e:
+            cfg.config_error = str(e)
+            return cfg
         for key in ("codename_placeholder", "stale_hours", "allow_tbd_in", "citation_exclude", "tier"):
             if key in data:
                 setattr(cfg, key, data[key])
@@ -79,7 +96,11 @@ CITE_RE = re.compile(
 
 
 def read_text(path: Path) -> str:
-    return path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    try:
+        text = path.read_bytes().decode("utf-8")
+    except UnicodeDecodeError as e:
+        raise UnreadableFile(path, f"file is not valid UTF-8: {e}") from e
+    return text.replace("\r\n", "\n")
 
 
 def rel(cfg: Config, path: Path) -> str:
@@ -204,6 +225,15 @@ class Roadmap:
     order: list[str]
 
 
+MILESTONE_ID_RE = re.compile(r"M(\d+)")
+
+
+def _milestone_sort_key(mid: str) -> tuple[int, str]:
+    """Numeric key for a milestone ID; tolerates an ID that doesn't match M<digits>."""
+    m = MILESTONE_ID_RE.fullmatch(mid)
+    return (int(m.group(1)), "") if m else (10**9, mid)
+
+
 @dataclass
 class Project:
     cfg: Config
@@ -213,6 +243,7 @@ class Project:
     plans: dict[str, Plan]
     adrs: list[Adr]
     roadmap: Roadmap | None
+    load_errors: list[Finding] = field(default_factory=list)
 
     def status_of(self, mid: str) -> str | None:
         if mid in self.milestones:
@@ -230,7 +261,7 @@ class Project:
 
     def milestone_order(self) -> list[str]:
         ordered = list(self.roadmap.order) if self.roadmap else []
-        for mid in sorted(self.milestones, key=lambda s: int(s[1:])):
+        for mid in sorted(self.milestones, key=_milestone_sort_key):
             if mid not in ordered:
                 ordered.append(mid)
         return ordered
@@ -389,19 +420,39 @@ def load_project(cfg: Config) -> Project:
     plans: dict[str, Plan] = {}
     adrs: list[Adr] = []
     roadmap: Roadmap | None = None
+    load_errors: list[Finding] = []
     if tier == "standard":
         for p in sorted((cfg.docs / "milestones").glob("M*.md")):
-            m = parse_milestone(p)
+            if not MILESTONE_ID_RE.fullmatch(p.stem):
+                continue  # not a milestone file; still citation-checked as ordinary markdown
+            try:
+                m = parse_milestone(p)
+            except UnreadableFile:
+                load_errors.append(Finding("E011", rel(cfg, p), 1, "file is not valid UTF-8"))
+                continue
             milestones[m.id] = m
         for p in sorted((cfg.docs / "plans").rglob("M*-*.md")):
-            pl = parse_plan(p)
+            try:
+                pl = parse_plan(p)
+            except UnreadableFile:
+                load_errors.append(Finding("E011", rel(cfg, p), 1, "file is not valid UTF-8"))
+                continue
             plans[pl.id] = pl
     if tier in ("standard", "lite") and (cfg.docs / "roadmap.md").is_file():
-        roadmap = parse_roadmap(cfg.docs / "roadmap.md")
+        try:
+            roadmap = parse_roadmap(cfg.docs / "roadmap.md")
+        except UnreadableFile:
+            load_errors.append(Finding("E011", rel(cfg, cfg.docs / "roadmap.md"), 1, "file is not valid UTF-8"))
     dec = cfg.docs / "decisions"
     if dec.is_dir():
-        adrs = [parse_adr(p) for p in sorted(dec.glob("*.md")) if ADR_FILE_RE.match(p.name)]
-    return Project(cfg, tier, iter_md(cfg), milestones, plans, adrs, roadmap)
+        for p in sorted(dec.glob("*.md")):
+            if not ADR_FILE_RE.match(p.name):
+                continue
+            try:
+                adrs.append(parse_adr(p))
+            except UnreadableFile:
+                load_errors.append(Finding("E011", rel(cfg, p), 1, "file is not valid UTF-8"))
+    return Project(cfg, tier, iter_md(cfg), milestones, plans, adrs, roadmap, load_errors)
 
 
 # --------------------------------------------------------------------------- checks: citations
@@ -422,7 +473,11 @@ def check_citations(cfg: Config, md_files: list[Path]) -> list[Finding]:
         r = rel(cfg, path)
         if any(r == x.strip("/") or r.startswith(x.strip("/") + "/") for x in cfg.citation_exclude):
             continue
-        text = read_text(path)
+        try:
+            text = read_text(path)
+        except UnreadableFile:
+            out.append(Finding("E011", r, 1, "file is not valid UTF-8"))
+            continue
         for m in CITE_RE.finditer(text):
             target, anchor = m.group(1), m.group(2)
             resolved = _resolve_citation(cfg, path, target)
@@ -431,7 +486,10 @@ def check_citations(cfg: Config, md_files: list[Path]) -> list[Finding]:
                 continue
             if anchor:
                 if resolved not in heading_cache:
-                    heading_cache[resolved] = numbered_headings(read_text(resolved))
+                    try:
+                        heading_cache[resolved] = numbered_headings(read_text(resolved))
+                    except UnreadableFile:
+                        heading_cache[resolved] = set()
                 if anchor not in heading_cache[resolved]:
                     out.append(Finding("E002", r, line_of(text, m.start()),
                                        f"no heading §{anchor} in {target}"))
@@ -466,6 +524,8 @@ def check_status_agreement(project: Project) -> list[Finding]:
         for f in m.features:
             if f.moved_to and project.feature_of(f.moved_to) is None:
                 out.append(Finding("E010", r, f.line, f"{f.id} moved pointer does not resolve: {f.moved_to}"))
+            if f.ticked and not f.moved_to and f.id not in project.plans:
+                out.append(Finding("E006", r, f.line, f"{f.id} is ticked but has no plan"))
         if m.status in ACTIVE_MILESTONE_STATUSES and not m.exit_criteria:
             out.append(Finding("E009", r, 1, f"{m.id} is '{m.status}' but has no exit criteria"))
         if m.status == "done":
@@ -539,7 +599,10 @@ def check_placeholders(project: Project) -> list[Finding]:
             continue
         if any(r == a or r.startswith(a + "/") for a in allowed):
             continue
-        text = read_text(path)
+        try:
+            text = read_text(path)
+        except UnreadableFile:
+            continue  # already reported as E011 by check_citations
         if text.startswith(GENERATED_MARKER):
             continue
         for i, line in enumerate(text.split("\n"), start=1):
@@ -576,13 +639,6 @@ def check_claims(project: Project, now: datetime | None = None) -> list[Finding]
 
 
 # --------------------------------------------------------------------------- generators
-
-
-def _plan_rel_for(project: Project, f: Feature) -> str | None:
-    if f.plan_path:
-        return f.plan_path
-    pl = project.plans.get(f.id)
-    return rel(project.cfg, pl.path) if pl else None
 
 
 def gen_milestones_index(project: Project) -> str:
@@ -632,28 +688,67 @@ def gen_decisions_index(project: Project) -> str:
     return "\n".join(lines) + "\n"
 
 
+CLAIMED_CAP = 6
+BLOCKED_CAP = 4
+NEXT_CAP = 6
+EVIDENCE_CAP = 3
+
+EVIDENCE_ID_RE = re.compile(r"^M(\d+)")
+
+
+def _evidence_sort_key(p: Path) -> tuple[int, str]:
+    """Numeric key by leading M<digits> in the filename; non-matching names sort after, by name."""
+    m = EVIDENCE_ID_RE.match(p.stem)
+    return (int(m.group(1)), p.name) if m else (10**9, p.name)
+
+
+def _capped_front(items: list[str], cap: int) -> list[str]:
+    """First `cap` lines; the last one becomes a summary when the list is longer than cap."""
+    if len(items) <= cap:
+        return items
+    shown = items[: cap - 1]
+    return shown + [f"- … and {len(items) - len(shown)} more"]
+
+
+def _capped_latest(items: list[str], cap: int) -> list[str]:
+    """Most recent `cap` lines; a summary of the rest is prepended when truncated."""
+    if len(items) <= cap:
+        return items
+    shown = items[-(cap - 1):]
+    return [f"- … and {len(items) - len(shown)} more"] + shown
+
+
 def gen_current(project: Project) -> str:
     cfg = project.cfg
     lines = [GENERATED_MARKER, "# Current focus", ""]
     active_phases = [p for p in (project.roadmap.phases if project.roadmap else []) if p.status == "active"]
     if active_phases:
         lines.append("**Phase:** " + "; ".join(f"{p.id} — {p.title}" for p in active_phases))
-    in_prog = [m for m in project.milestones.values() if m.status == "in progress"]
+    in_prog = [project.milestones[m] for m in project.milestone_order()
+               if m in project.milestones and project.milestones[m].status == "in progress"]
     if in_prog:
         lines.append("**Milestones in progress:** " + "; ".join(f"{m.id} — {m.title}" for m in in_prog))
     lines.append("")
+
     claimed = sorted((p for p in project.plans.values() if p.status == "in progress"), key=lambda p: p.id)
-    lines += ["## Claimed features", ""]
-    for p in claimed[:8]:
-        stamp = max(p.stamps)[0].strftime("%Y-%m-%dT%H:%MZ") + f" ({max(p.stamps)[1]})" if p.stamps else "no stamp"
+    claimed_lines = []
+    for p in claimed:
+        if p.stamps:
+            dt, agent = max(p.stamps)
+            stamp = dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%MZ") + f" ({agent})"
+        else:
+            stamp = "no stamp"
         note = f" — last note: {p.last_note}" if p.last_note else ""
-        lines.append(f"- {p.id} — {p.title} — `{rel(cfg, p.path)}` — {stamp}{note}")
-    if not claimed:
-        lines.append("- none")
+        claimed_lines.append(f"- {p.id} — {p.title} — `{rel(cfg, p.path)}` — {stamp}{note}")
+    lines += ["## Claimed features", ""]
+    lines += _capped_front(claimed_lines, CLAIMED_CAP) if claimed_lines else ["- none"]
+
     blocked = sorted((p for p in project.plans.values() if p.status == "blocked"), key=lambda p: p.id)
     if blocked:
+        blocked_lines = [f"- {p.id} — {p.title} — `{rel(cfg, p.path)}`" for p in blocked]
         lines += ["", "## Blocked", ""]
-        lines += [f"- {p.id} — {p.title} — `{rel(cfg, p.path)}`" for p in blocked[:8]]
+        lines += _capped_front(blocked_lines, BLOCKED_CAP)
+
     nxt = []
     for m in in_prog:
         for f in m.features:
@@ -663,12 +758,14 @@ def gen_current(project: Project) -> str:
             if pl is None or pl.status in ("grounding", "planned"):
                 nxt.append(f"- {f.id} — {f.title}")
     lines += ["", "## Next unclaimed features", ""]
-    lines += nxt[:8] or ["- none"]
+    lines += _capped_front(nxt, NEXT_CAP) if nxt else ["- none"]
+
     ev_dir = cfg.docs / "evidence"
-    evidence = sorted(ev_dir.glob("*.md")) if ev_dir.is_dir() else []
+    evidence = sorted(ev_dir.glob("*.md"), key=_evidence_sort_key) if ev_dir.is_dir() else []
     if evidence:
+        evidence_lines = [f"- `{rel(cfg, p)}`" for p in evidence]
         lines += ["", "## Latest evidence", ""]
-        lines += [f"- `{rel(cfg, p)}`" for p in evidence[-3:]]
+        lines += _capped_latest(evidence_lines, EVIDENCE_CAP)
     return "\n".join(lines) + "\n"
 
 
@@ -691,7 +788,10 @@ def check_generated(project: Project) -> list[Finding]:
     out: list[Finding] = []
     for relp, expected in generate(project).items():
         path = cfg.root / relp
-        actual = read_text(path) if path.is_file() else None
+        try:
+            actual = read_text(path) if path.is_file() else None
+        except UnreadableFile:
+            actual = None
         if relp.endswith("milestones/README.md"):
             for row in expected.split("\n"):
                 if row.startswith("| M") and (actual is None or row not in actual):
@@ -726,6 +826,10 @@ def run(root: Path, fix: bool = False, stale_hours: float | None = None) -> list
 def check(project: Project, now: datetime | None = None) -> list[Finding]:
     cfg = project.cfg
     findings: list[Finding] = []
+    if cfg.config_error:
+        findings.append(Finding("E012", "docs/.check_docs.toml", 1,
+                                 f"config is not valid TOML: {cfg.config_error}"))
+    findings += project.load_errors
     findings += check_citations(cfg, project.md_files)
     findings += check_placeholders(project)
     if project.tier == "standard":

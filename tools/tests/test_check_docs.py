@@ -440,3 +440,129 @@ def test_minimal_tier_only_citations_and_placeholders(tmp_path):
     found = cd.run(root)
     assert codes(found) == ["E005"]
     assert cd.generate(cd.load_project(cd.load_config(root))) == {}
+
+
+# --------------------------------------------------------------------------- final fix wave
+
+
+def test_gen_current_m10_orders_numerically_not_lexically(tmp_path):
+    root = make_project(tmp_path)
+    (root / "docs/milestones/M2.md").write_text(
+        "# M2 — Authoring tool\n"
+        "**Status:** in progress\n"
+        "**Goal:** an editor for instances.\n"
+        "**Exit criteria:** an editor opens and edits one instance without corrupting it.\n"
+        "**Evidence of exit:**\n"
+        "**Depends on:**\n\n"
+        "## Features\n"
+        "- [ ] M2-01 — Basic editor\n\n"
+        "## Notes\n",
+        encoding="utf-8")
+    (root / "docs/milestones/M10.md").write_text(
+        "# M10 — Extra milestone\n"
+        "**Status:** in progress\n"
+        "**Goal:** something later.\n"
+        "**Exit criteria:** something measurable.\n"
+        "**Evidence of exit:**\n"
+        "**Depends on:**\n\n"
+        "## Features\n"
+        "- [ ] M10-01 — Something\n\n"
+        "## Notes\n",
+        encoding="utf-8")
+    roadmap = root / "docs/roadmap.md"
+    text = roadmap.read_text(encoding="utf-8")
+    text = text.replace(
+        "## Explicitly deferred",
+        "### M10 — Extra milestone\nGoal: something later.\n\n## Explicitly deferred")
+    roadmap.write_text(text, encoding="utf-8")
+    cur = cd.generate(cd.load_project(cd.load_config(root)))["docs/CURRENT.md"]
+    prog_line = next(ln for ln in cur.splitlines() if ln.startswith("**Milestones in progress:**"))
+    assert prog_line.index("M2 —") < prog_line.index("M10 —")
+    assert cur.index("M2-01") < cur.index("M10-01")
+
+
+def test_gen_current_stays_under_forty_lines_with_many_items(tmp_path):
+    root = make_project(tmp_path)
+    plans_dir = root / "docs" / "plans" / "M9"
+    plans_dir.mkdir(parents=True, exist_ok=True)
+    plan_body = (
+        "**Milestone:** M9\n**Branch:** feat/{pid}\n**Design docs:**\n**ADRs:**\n**Depends on:**\n\n"
+        "## Sessions\n{sessions}\n\n## Objective\nX\n\n## Current state\nX\n\n## Approach\nX\n\n"
+        "## Tasks\n- [ ] T1 — X. **Verify:** `true`\n\n## Progress notes\n\n## Verification log\n"
+    )
+    for i in range(1, 8):
+        pid = f"M9-{i:02d}"
+        (plans_dir / f"{pid}-claimed.md").write_text(
+            f"# {pid} — Claimed {i}\n**Status:** in progress\n" +
+            plan_body.format(pid=pid, sessions=f"- 2026-09-15T09:00Z — claude-code — feat/{pid}"),
+            encoding="utf-8")
+    for i in range(1, 7):
+        pid = f"M7-{i:02d}"
+        (plans_dir / f"{pid}-blocked.md").write_text(
+            f"# {pid} — Blocked {i}\n**Status:** blocked\n" +
+            plan_body.format(pid=pid, sessions=""),
+            encoding="utf-8")
+    features = "\n".join(f"- [ ] M8-{i:02d} — Feature {i}" for i in range(1, 9))
+    (root / "docs/milestones/M8.md").write_text(
+        "# M8 — Extra\n**Status:** in progress\n**Goal:** test.\n"
+        "**Exit criteria:** something measurable.\n**Evidence of exit:**\n**Depends on:**\n\n"
+        f"## Features\n{features}\n\n## Notes\n",
+        encoding="utf-8")
+    for i in range(1, 4):
+        (root / "docs" / "evidence" / f"extra-{i}.md").write_text(f"# Extra {i}\n", encoding="utf-8")
+    cur = cd.generate(cd.load_project(cd.load_config(root)))["docs/CURRENT.md"]
+    assert len(cur.strip().split("\n")) < 40
+    assert "and " in cur and "more" in cur
+
+
+def test_plan_rel_for_removed():
+    assert not hasattr(cd, "_plan_rel_for")
+
+
+def test_e011_non_utf8_file_reports_finding_not_traceback(tmp_path):
+    root = make_project(tmp_path)
+    (root / "docs" / "bad.md").write_bytes(b"\xff\xfe bad")
+    found = cd.run(root)
+    assert "E011" in codes(found)
+
+
+def test_e012_malformed_config_toml_reports_finding_not_traceback(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/.check_docs.toml": ("stale_hours = 876000", "stale_hours = ["),
+    })
+    found = cd.run(root)
+    assert "E012" in codes(found)
+
+
+def test_non_milestone_stem_in_milestones_dir_does_not_crash(tmp_path):
+    root = make_project(tmp_path)
+    (root / "docs/milestones/Mission.md").write_text("# Mission\nA note, not a milestone.\n", encoding="utf-8")
+    found = cd.run(root)
+    assert "E001" not in [f.code for f in found if f.path.endswith("Mission.md")]
+    assert not any(f.path.endswith("Mission.md") for f in found)
+
+
+def test_e006_ticked_feature_with_no_plan(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/milestones/M1.md": ("- [ ] M1-02", "- [x] M1-02"),
+    })
+    assert "E006" in codes(cd.run(root))
+
+
+def test_gen_current_stamp_rendered_in_utc(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/plans/M1/M1-01-runtime-loop.md": (
+            "2026-09-15T09:00Z — claude-code — feat/M1-01-runtime-loop",
+            "2026-09-15T11:00:00+02:00 — claude-code — feat/M1-01-runtime-loop"),
+    })
+    cur = cd.generate(cd.load_project(cd.load_config(root)))["docs/CURRENT.md"]
+    assert "2026-09-15T09:00Z" in cur
+    assert "2026-09-15T11:00" not in cur
+
+
+def test_evidence_ordered_numerically_not_lexically(tmp_path):
+    root = make_project(tmp_path)
+    (root / "docs/evidence/M2-exit.md").write_text("# M2 exit\n", encoding="utf-8")
+    (root / "docs/evidence/M10-exit.md").write_text("# M10 exit\n", encoding="utf-8")
+    cur = cd.generate(cd.load_project(cd.load_config(root)))["docs/CURRENT.md"]
+    assert cur.index("M2-exit.md") < cur.index("M10-exit.md")
