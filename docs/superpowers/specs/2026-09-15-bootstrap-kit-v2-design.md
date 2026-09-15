@@ -78,7 +78,7 @@ Five kinds, one job each. The v1 table had four and left the roadmap unclassifie
 | Decision | `docs/decisions/` | Why this over that | Never edited; superseded |
 | Direction | `docs/roadmap.md` | In what order, and what each phase must prove | At phase boundaries and milestone reviews |
 | Progress | `docs/milestones/`, `docs/plans/`, `docs/CURRENT.md` | What are we building now, what is done | Every session |
-| Reference | `DOCS.md`, `WORKFLOW.md`, `GLOSSARY.md`, `AGENTS.md`, `OPEN-QUESTIONS.md` | How we work, what words mean, what is unresolved | When the process changes |
+| Reference | `DOCS.md`, `AGENTS.md` at the project root; `docs/WORKFLOW.md`, `docs/GLOSSARY.md`, `docs/OPEN-QUESTIONS.md` | How we work, what words mean, what is unresolved | When the process changes |
 
 Design docs carry a header with status (`draft | stable | living`) and a `## Changelog` section at the end. A design change during a milestone appends a changelog line in the same commit. Section anchors remain contracts: never renumber, append `§6.1a`.
 
@@ -212,6 +212,8 @@ Checks, each with a stable error code:
 | W001 | A claim stamp is older than the stale threshold |
 | W002 | A plan is `in progress` with an unticked dependency |
 | W003 | A generated file differs from what `--fix` would write |
+| E011 | A Markdown file is not valid UTF-8 (added during implementation so malformed input yields a finding, not a traceback) |
+| E012 | `docs/.check_docs.toml` is not valid TOML; defaults are used (added during implementation) |
 
 `--fix` regenerates `milestones/README.md`, `plans/README.md`, `decisions/README.md`, and `CURRENT.md`. Generated files begin with a marker line stating they are generated and by what. `--fix` never touches any other file. Exit code is non-zero on any `E` code, zero otherwise; warnings print but pass.
 
