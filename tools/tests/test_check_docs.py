@@ -151,3 +151,56 @@ def test_detect_tier(tmp_path):
     assert cd.detect_tier(cd.load_config(root)) == "lite"
     (root / "docs" / "roadmap.md").unlink()
     assert cd.detect_tier(cd.load_config(root)) == "minimal"
+
+
+def test_e006_plan_done_but_feature_unticked(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/plans/M1/M1-01-runtime-loop.md": ("**Status:** in progress", "**Status:** done"),
+    })
+    assert "E006" in codes(cd.run(root))
+
+
+def test_e006_feature_ticked_but_plan_not_done(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/milestones/M1.md": ("- [ ] M1-01", "- [x] M1-01"),
+    })
+    assert "E006" in codes(cd.run(root))
+
+
+def test_e006_plan_without_feature_line(tmp_path):
+    root = make_project(tmp_path)
+    (root / "docs/plans/M1/M1-09-orphan.md").write_text(
+        "# M1-09 — Orphan\n**Status:** planned\n**Milestone:** M1\n", encoding="utf-8")
+    assert "E006" in codes(cd.run(root))
+
+
+def test_e007_milestone_done_with_unticked_feature(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/milestones/M1.md": ("**Status:** in progress", "**Status:** done"),
+    })
+    found = codes(cd.run(root))
+    assert "E007" in found
+
+
+def test_e007_milestone_done_without_evidence(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/milestones/M0.md": ("**Evidence of exit:** `docs/evidence/M0-exit.md`", "**Evidence of exit:**"),
+    })
+    assert "E007" in codes(cd.run(root))
+
+
+def test_e009_planned_milestone_without_exit(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/milestones/M1.md": (
+            "**Exit criteria:** one instance plays end to end with zero validator errors.",
+            "**Exit criteria:**"),
+    })
+    assert "E009" in codes(cd.run(root))
+
+
+def test_e010_moved_pointer_unresolved(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/milestones/M0.md": ("moved to M1-02", "moved to M1-77"),
+        "docs/plans/M0/M0-02-old-thing.md": ("moved to M1-02", "moved to M1-77"),
+    })
+    assert "E010" in codes(cd.run(root))

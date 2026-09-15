@@ -438,6 +438,45 @@ def check_citations(cfg: Config, md_files: list[Path]) -> list[Finding]:
     return out
 
 
+# --------------------------------------------------------------------------- checks: status agreement
+
+
+def check_status_agreement(project: Project) -> list[Finding]:
+    cfg = project.cfg
+    out: list[Finding] = []
+    for pl in project.plans.values():
+        r = rel(cfg, pl.path)
+        hit = project.feature_of(pl.id)
+        if pl.status == "moved":
+            if not pl.moved_to or project.feature_of(pl.moved_to) is None:
+                out.append(Finding("E010", r, 1, f"moved pointer does not resolve: {pl.moved_to or '(none)'}"))
+            continue
+        if hit is None:
+            out.append(Finding("E006", r, 1, f"plan {pl.id} has no feature line in any milestone"))
+            continue
+        m, f = hit
+        if f.moved_to:
+            continue
+        if pl.status == "done" and not f.ticked:
+            out.append(Finding("E006", rel(cfg, m.path), f.line, f"{f.id} plan is done but feature is unticked"))
+        if f.ticked and pl.status != "done":
+            out.append(Finding("E006", rel(cfg, m.path), f.line, f"{f.id} feature is ticked but plan is '{pl.status}'"))
+    for m in project.milestones.values():
+        r = rel(cfg, m.path)
+        for f in m.features:
+            if f.moved_to and project.feature_of(f.moved_to) is None:
+                out.append(Finding("E010", r, f.line, f"{f.id} moved pointer does not resolve: {f.moved_to}"))
+        if m.status in ACTIVE_MILESTONE_STATUSES and not m.exit_criteria:
+            out.append(Finding("E009", r, 1, f"{m.id} is '{m.status}' but has no exit criteria"))
+        if m.status == "done":
+            for f in m.features:
+                if not f.moved_to and not f.ticked:
+                    out.append(Finding("E007", r, f.line, f"{m.id} is done but {f.id} is unticked"))
+            if not m.evidence:
+                out.append(Finding("E007", r, 1, f"{m.id} is done but has no evidence link"))
+    return out
+
+
 # --------------------------------------------------------------------------- run / main
 
 
@@ -453,6 +492,8 @@ def check(project: Project) -> list[Finding]:
     cfg = project.cfg
     findings: list[Finding] = []
     findings += check_citations(cfg, project.md_files)
+    if project.tier == "standard":
+        findings += check_status_agreement(project)
     return findings
 
 
