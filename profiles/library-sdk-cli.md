@@ -15,7 +15,7 @@ The central artefact is a public API surface other code calls.
 | `<project>/docs/design/architecture.md` | repo layout (packages, build targets); the key internal interfaces as code; data flow for the main call path with a performance budget; dependency policy (what's vendored, what's external); testing strategy (unit, integration, golden examples); a "decisions we're committing to" list | bootstrap |
 | `<project>/docs/design/versioning-and-compat.md` | the versioning scheme; compatibility guarantees per stability tier; the deprecation process and timeline; breaking-change policy; the release checklist | phase start |
 
-Versioning and compat is written once the API surface is stable enough to promise something about, per the phase-based rule in `core/long-horizon.md §3`; the other three are written at bootstrap.
+Versioning and compat is written when the API surface first stabilizes enough to promise something about — this is an artifact trigger, not a phase boundary; a Standard-tier project (this profile's default, `§5`) has no second phase to become `active` (`core/tiers.md §4`). The other three are written at bootstrap. On a Full-tier project this usually coincides with the phase that ships the first stable release becoming `active` (`core/tiers.md §4`).
 
 ## 3. Vocabulary
 

@@ -13,10 +13,10 @@ The central artefact is environments and the SLOs they must hold.
 | `<project>/docs/design/<product>-design.md` | who operates this and who consumes it; service-level objectives and how each is measured; capacity and scaling assumptions; non-goals for the first environment; success criteria for the first environment | bootstrap |
 | `<project>/docs/design/architecture.md` | topology (regions, networks, boundaries); the key interfaces (APIs, queues) as code or schema; data flow for the main request path with a latency budget; persistence and backup strategy; testing strategy, including failure injection; a "decisions we're committing to" list | bootstrap |
 | `<project>/docs/design/environments.md` | principles (what is authoritative — infrastructure-as-code vs. console changes); the environment and config schema with an annotated example; secrets and configuration management; the promotion path between environments; validation rules as a numbered list | bootstrap |
-| `<project>/docs/design/runbooks.md` | purpose and audience; standard operating procedures, one per scenario; incident-response steps; escalation paths; rollback and recovery procedures | phase start |
+| `<project>/docs/runbooks/<scenario>.md` | purpose and audience; standard operating procedures, one per scenario; incident-response steps; escalation paths; rollback and recovery procedures | when a real environment first exists |
 | `<project>/docs/design/security.md` | threat model summary; identity and access management; network security boundaries; secrets and key rotation; audit logging | bootstrap |
 
-Runbooks are Reference kind, not Design kind (`core/doc-kinds.md §2`): they change whenever the operational procedure changes, not on a deliberate release cadence, and are written once there is a real environment to operate, per the phase-based rule in `core/long-horizon.md §3`. The other four are written at bootstrap.
+Runbooks are Reference kind, not Design kind (`core/doc-kinds.md §2`): they carry no design-doc header and no `## Changelog`, live under `<project>/docs/runbooks/` rather than `<project>/docs/design/`, and are cited from the service design doc. They are written when a real environment first exists — this is an artifact trigger, not a phase boundary; a Standard-tier project (this profile's default, `§5`) has no second phase to become `active` (`core/tiers.md §4`). On a Full-tier project this usually coincides with the phase that stands up that environment becoming `active` (`core/tiers.md §4`). The other four docs are written at bootstrap.
 
 ## 3. Vocabulary
 
@@ -48,4 +48,4 @@ Starting categories to confirm or replace during Brainstorm:
 
 1. Write one real environment definition before the runbooks — a runbook written against an imagined environment is a runbook nobody can follow during an incident.
 2. An SLO without a stated measurement method is a wish; state how it's measured in the same sentence that states the target.
-3. Runbooks change whenever the operational procedure changes, not on the design doc's changelog cadence — keep them out of `docs/design/` in spirit even where they're filed alongside it.
+3. Runbooks are Reference kind: they change whenever the operational procedure changes, not on a design doc's changelog cadence, and live under `<project>/docs/runbooks/`, cited from the service design doc rather than filed inside it.

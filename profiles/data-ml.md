@@ -16,7 +16,7 @@ The central artefact is datasets and the metrics computed over them.
 | `<project>/docs/design/architecture.md` | pipeline stages (ingest, train, evaluate, serve); the key interfaces as code; data flow with a latency and throughput budget; persistence (artifacts, checkpoints); testing strategy; a "decisions we're committing to" list | bootstrap |
 | `<project>/docs/design/model-card.md` | intended use and out-of-scope use; a training-data summary; evaluation results (the eval runs); known limitations and failure modes; maintenance and retraining triggers | phase start |
 
-The model card is written once a model exists to describe, per the phase-based rule in `core/long-horizon.md §3`; the other four are written at bootstrap because the metric, the schema, and the protocol have to exist before the first experiment runs.
+The model card is written when a first trained model exists to describe — this is an artifact trigger, not a phase boundary; a Standard-tier project (this profile's default, `§5`) has no second phase to become `active` (`core/tiers.md §4`). The other four are written at bootstrap because the metric, the schema, and the protocol have to exist before the first experiment runs. On a Full-tier project this usually coincides with the phase that trains that model becoming `active` (`core/tiers.md §4`).
 
 ## 3. Vocabulary
 
