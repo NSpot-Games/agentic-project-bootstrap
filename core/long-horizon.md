@@ -4,7 +4,7 @@ Rules so a project with twenty milestones is planned as honestly as one with thr
 
 ## 1. Rolling wave
 
-At any time, the current milestone and the next one are `planned` or later: a measurable exit, features listed, the milestone file present. Everything beyond that is `sketch`: a goal in one or two sentences in the roadmap, no milestone file, no exit criteria required yet. The linter permits `TBD` inside `sketch` sections of the roadmap and nowhere else outside `<project>/OPEN-QUESTIONS.md`.
+At any time, the current milestone and the next one are `planned` or later: a measurable exit, features listed, the milestone file present. Everything beyond that is `sketch`: a goal in one or two sentences in the roadmap, no milestone file, no exit criteria required yet. The linter permits `TBD` inside `sketch` sections of the roadmap and nowhere else outside `<project>/docs/OPEN-QUESTIONS.md`.
 
 ## 2. Phase exits
 
@@ -12,7 +12,7 @@ Each phase states what it must prove and how that is measured. The design doc's 
 
 ## 3. Design docs by phase
 
-Bootstrap writes the vision, the core data model, the architecture skeleton, and one example instance covering phase 1 only. Each later phase, when it becomes `active`, gets the per-area design docs it needs under `<project>/docs/design/<area>/` and a new example instance exercising the systems that phase adds. A design doc written before its phase is active is a sketch and says so in its header (`core/doc-kinds.md §3`).
+Bootstrap writes the vision, the core data model, the architecture skeleton, and one example instance covering phase 1 only. Each later phase, when it becomes `active`, gets the per-area design docs it needs under `<project>/docs/design/<area>/` and a new example instance exercising the systems that phase adds. A design doc written before its phase is active is `draft` and says so in its header (`core/doc-kinds.md §3`).
 
 ## 4. Re-planning cadence
 

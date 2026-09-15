@@ -14,11 +14,11 @@ An agent's session carries no memory into the next one. Everything it knows abou
 | Decision | `<project>/docs/decisions/` | Why this over that | Never edited; superseded |
 | Direction | `<project>/docs/roadmap.md` | In what order, and what each phase must prove | At phase boundaries and milestone reviews |
 | Progress | `<project>/docs/milestones/`, `<project>/docs/plans/`, `<project>/docs/CURRENT.md` | What are we building now, what is done | Every session |
-| Reference | `<project>/DOCS.md`, `<project>/WORKFLOW.md`, `<project>/GLOSSARY.md`, `<project>/AGENTS.md`, `<project>/OPEN-QUESTIONS.md` | How we work, what words mean, what is unresolved | When the process changes |
+| Reference | `<project>/DOCS.md`, `<project>/docs/WORKFLOW.md`, `<project>/docs/GLOSSARY.md`, `<project>/AGENTS.md`, `<project>/docs/OPEN-QUESTIONS.md` | How we work, what words mean, what is unresolved | When the process changes |
 
 **Design** states what a part of the system is and why it is shaped that way: vision, data model, architecture, the reasoning behind a shape. It does not carry checkboxes, session notes, or a log of what happened — that drifts the moment it is written and nobody trusts it after the second drift.
 
-**Decision** records a choice between alternatives at the moment it was made, so later sessions do not relitigate it or silently reverse it. An ADR is never edited to reflect a later change of mind; a later choice supersedes it and says so. It does not hold ongoing rationale for something still open — that belongs in the design doc once decided, or in `<project>/OPEN-QUESTIONS.md` until then.
+**Decision** records a choice between alternatives at the moment it was made, so later sessions do not relitigate it or silently reverse it. An ADR is never edited to reflect a later change of mind; a later choice supersedes it and says so. It does not hold ongoing rationale for something still open — that belongs in the design doc once decided, or in `<project>/docs/OPEN-QUESTIONS.md` until then.
 
 **Direction** is the roadmap: the order of phases and milestones and what each phase must prove before the next starts. It carries no checkboxes — progress is not tracked here, only sequence and intent. It changes at phase boundaries and milestone reviews, not every session.
 
@@ -47,7 +47,7 @@ Restated in every project's own `<project>/DOCS.md` (see `templates/DOCS.md §4`
 - Something to build → a milestone feature line. Never a design doc.
 - How it is being built → the plan. Never a design doc or an ADR.
 - A new term → the glossary, in the same change that introduces it.
-- An open question → `<project>/OPEN-QUESTIONS.md`. Once answered → an ADR, and the entry is removed.
+- An open question → `<project>/docs/OPEN-QUESTIONS.md`. Once answered → an ADR, and the entry is removed.
 - A measurement → the evidence directory, linked from the milestone it supports.
 - A phase or a reordering → the roadmap, with an ADR if the order changed for a stated reason.
 - Current focus → nowhere by hand; `<project>/docs/CURRENT.md` is generated (`core/long-horizon.md §7`).

@@ -10,7 +10,7 @@ IDs are allocated in order and never reused. A moved feature gets a new ID; the 
 **Brainstorm** — approach, alternatives (one line each), risks and how they'll be checked, docs to update, ADR needed? (write it as `proposed` now). A brainstorm may end in a **spike**: time-boxed, throwaway code to answer one question. The spike's question, box, and result are recorded in the plan's **Current state** (or an ADR if it decided something). Spike code is deleted or re-enters through Plan; spikes are never committed to `main`. With the human if ambiguous; alone if the docs already say what to build.
 **Plan** — tasks, each one commit, each naming its verification. Tests first where tests apply. Set plan status `planned`; link it from the milestone.
 **Execute** — task by task: do, verify, paste evidence, tick, commit `M1-03: ...`, note anything learned. Plan wrong? Fix the plan first.
-**Close** — all tasks ticked, suite green, docs updated, ADRs accepted by a human, feature ticked in the milestone, plan `done`. Run `python tools/check_docs.py --fix`; a `proposed` ADR does not block Close unless `**Blocking:** yes`. If this is the milestone's last feature, run the roadmap review checklist (§10).
+**Close** — all tasks ticked, suite green, docs updated, ADRs reviewed: accepted by a human, or left `proposed` (non-blocking unless `**Blocking:** yes`), feature ticked in the milestone, plan `done`. Run `python tools/check_docs.py --fix`. If this is the milestone's last feature, run the roadmap review checklist (§10).
 
 ## 3. Sessions
 Claim before you start: plan status `in progress` plus a stamp line `- {{date}}T{{hh}}:{{mm}}Z — {{agent}} — {{branch}}` under `## Sessions`. Never take a feature stamped under 24 hours ago by someone else.

@@ -1,6 +1,6 @@
 # Lifecycle
 
-Ground → Brainstorm → Plan → Execute → Close, as every feature moves through it, and the escape hatches that keep the process from being a straitjacket. Each project copies this cycle into its own `<project>/WORKFLOW.md §2` in the words that fit its profile; this page is where the rules behind those words live.
+Ground → Brainstorm → Plan → Execute → Close, as every feature moves through it, and the escape hatches that keep the process from being a straitjacket. Each project copies this cycle into its own `<project>/docs/WORKFLOW.md §2` in the words that fit its profile; this page is where the rules behind those words live.
 
 ## 1. The five steps
 
@@ -12,7 +12,7 @@ Ground → Brainstorm → Plan → Execute → Close, as every feature moves thr
 
 **Execute.** Work task by task: do the work, run the verification, paste the evidence into the plan, tick the task, commit with the feature ID as the commit message's prefix, and note anything learned along the way, even things that do not change the plan. If execution reveals the plan is wrong — a task does not do what was expected, or a step was missed — fix the plan first and commit that fix, rather than quietly deviating from what the plan says and leaving the next reader confused.
 
-**Close.** All tasks ticked with evidence, the suite green (or the plan says exactly what is red and why that is acceptable), docs updated in the same change that needed them, any ADRs written during the feature accepted by a human, the feature ticked in its milestone, and the plan set to `done`. See `§5` for the full checklist.
+**Close.** All tasks ticked with evidence, the suite green (or the plan says exactly what is red and why that is acceptable), docs updated in the same change that needed them, ADRs written during the feature reviewed: accepted by a human, or left `proposed` (non-blocking unless `**Blocking:** yes`), the feature ticked in its milestone, and the plan set to `done`. See `§5` for the full checklist.
 
 ## 2. Spikes
 

@@ -24,7 +24,7 @@ One line per top-level entry; cite `<file>.md §N`.
 4. Work a task, run its verification, paste evidence, tick, commit as `M1-03: what changed`.
 5. Before ending: plan matches reality; notes say where you stopped.
 6. Before ending: run `python tools/check_docs.py --fix` and commit the generated files with your work.
-Small fixes skip the plan (`WORKFLOW.md` §5).
+Small fixes skip the plan (`docs/WORKFLOW.md` §5).
 
 ## Commands
 {{commands}}
@@ -41,7 +41,7 @@ Small fixes skip the plan (`WORKFLOW.md` §5).
 - Don't tick a box without running the verification.
 - Don't renumber sections in design docs.
 - Don't edit `docs/CURRENT.md` or any `README.md` index by hand; they are generated.
-- Don't start a feature whose plan has a session stamp under 24 hours old.
+- Don't start a feature whose plan has a session stamp under 24 hours old from someone else.
 
 ## Tool-specific notes
 - Claude Code: `CLAUDE.md` is `@AGENTS.md` plus nothing.

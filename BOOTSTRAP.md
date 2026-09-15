@@ -30,8 +30,8 @@ small change skip the plan entirely — a bug fix with a reproducing test, a typ
 bump with no API change (`core/lifecycle.md §3`).
 
 **One instruction file for all agents:** `<project>/AGENTS.md` at the project root is canonical;
-`<project>/CLAUDE.md` is `@AGENTS.md` and nothing else; nested `AGENTS.md` files scope rules to
-subtrees.
+`<project>/CLAUDE.md` is `@AGENTS.md` and nothing else; nested `<project>/AGENTS.md` files scope
+rules to subtrees.
 
 ## 2. The machinery
 
@@ -75,13 +75,13 @@ A project on the standard tier (`core/tiers.md §3`, most projects) looks like t
 (`core/tiers.md §4`).
 
 ```
-<project>/AGENTS.md                              canonical agent instructions (< 60 lines), points outward
+<project>/AGENTS.md                              canonical agent instructions (< 120 lines), points outward
 <project>/CLAUDE.md                              "@AGENTS.md" and nothing else
 <project>/DOCS.md                                map of docs/ and the rules for it
 <project>/README.md                              one paragraph for humans, pointer to <project>/DOCS.md
-<project>/WORKFLOW.md                            the five-step lifecycle in this project's words, session handoff
-<project>/GLOSSARY.md                            the project's words, grouped by area, with ID prefixes
-<project>/OPEN-QUESTIONS.md                      every open question, one place, with an owner and a deadline
+<project>/docs/WORKFLOW.md                       the five-step lifecycle in this project's words, session handoff
+<project>/docs/GLOSSARY.md                       the project's words, grouped by area, with ID prefixes
+<project>/docs/OPEN-QUESTIONS.md                 every open question, one place, with an owner and a deadline
 <project>/docs/CURRENT.md                        generated: active phase, in-progress work, claimed features
 <project>/docs/roadmap.md                        phases and milestones in order; principles; deferred list
 <project>/docs/design/<product>-design.md        design docs the chosen profile calls for (see note below)

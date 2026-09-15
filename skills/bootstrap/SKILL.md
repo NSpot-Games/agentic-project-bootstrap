@@ -73,13 +73,13 @@ Once the brainstorm, phase 1's design docs, and the roadmap are all written and 
 1. Copy the files `templates/` provides for the chosen tier into the project.
 2. Substitute every `{{token}}` using the table in `templates/README.md`; values come from C0's
    answers, the brainstorm's decisions, the design docs, and the roadmap just written.
-3. Create the phase 1 milestone files the rolling wave calls for: the current and next
-   milestone `planned` with real exits, everything beyond `sketch`.
+3. Create the milestone files for the current and next milestone; everything beyond stays
+   `sketch` in the roadmap only.
 4. Run `python tools/check_docs.py --root . --fix` and fix whatever it reports.
 
 ## 5. First session
 
-Open `<project>/docs/CURRENT.md` and claim `M0-01`. Follow `<project>/WORKFLOW.md` from there.
+Open `<project>/docs/CURRENT.md` and claim `M0-01`. Follow `<project>/docs/WORKFLOW.md` from there.
 
 ## 6. Brownfield variant
 
@@ -93,7 +93,7 @@ this variant writes — stop after each one and post the review-gate message bef
 ## 7. What this skill never does
 
 - Write more than one design doc in a single session, unless the user explicitly says to.
-- Tick a feature checkbox itself — only the user does that, after running the verification.
+- This skill never ticks a box; ticking happens in feature work, with verification evidence.
 - Accept an ADR — an ADR moves from `proposed` to `accepted` by human decision, never by this
   skill.
 - Edit a generated file by hand (`<project>/docs/CURRENT.md`,
