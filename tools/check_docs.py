@@ -554,6 +554,27 @@ def check_placeholders(project: Project) -> list[Finding]:
     return out
 
 
+# --------------------------------------------------------------------------- checks: claims
+
+
+def check_claims(project: Project, now: datetime | None = None) -> list[Finding]:
+    cfg = project.cfg
+    now = now or datetime.now(timezone.utc)
+    out: list[Finding] = []
+    for pl in project.plans.values():
+        if pl.status != "in progress":
+            continue
+        r = rel(cfg, pl.path)
+        if not pl.stamps:
+            out.append(Finding("W001", r, 1, f"{pl.id} is in progress with no session stamp under ## Sessions"))
+            continue
+        latest = max(dt for dt, _ in pl.stamps)
+        if now - latest > timedelta(hours=cfg.stale_hours):
+            age_h = (now - latest).total_seconds() / 3600
+            out.append(Finding("W001", r, 1, f"{pl.id} claim is stale: last stamp {latest.isoformat()} ({age_h:.0f}h ago)"))
+    return out
+
+
 # --------------------------------------------------------------------------- run / main
 
 
@@ -565,7 +586,7 @@ def run(root: Path, fix: bool = False, stale_hours: float | None = None) -> list
     return check(project)
 
 
-def check(project: Project) -> list[Finding]:
+def check(project: Project, now: datetime | None = None) -> list[Finding]:
     cfg = project.cfg
     findings: list[Finding] = []
     findings += check_citations(cfg, project.md_files)
@@ -573,6 +594,7 @@ def check(project: Project) -> list[Finding]:
     if project.tier == "standard":
         findings += check_status_agreement(project)
         findings += check_dependencies(project)
+        findings += check_claims(project, now)
     return findings
 
 

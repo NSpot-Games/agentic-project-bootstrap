@@ -1,4 +1,5 @@
 import shutil
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -272,3 +273,33 @@ def test_e005_not_applied_outside_docs_scope(tmp_path):
     root = make_project(tmp_path)
     (root / "CONTRIBUTING.md").write_text("TBD {{later}}\n", encoding="utf-8")
     assert "E005" not in codes(cd.run(root))
+
+
+def test_w001_stale_claim(tmp_path):
+    root = make_project(tmp_path)
+    # fixture stamp is 2026-09-15T09:00Z; config allows 876000h, CLI override to 1h
+    proj = cd.load_project(cd.load_config(root))
+    proj.cfg.stale_hours = 1
+    now = datetime(2026, 9, 15, 12, 0, tzinfo=timezone.utc)
+    assert "W001" in codes(cd.check(proj, now=now))
+
+
+def test_w001_fresh_claim_passes(tmp_path):
+    root = make_project(tmp_path)
+    proj = cd.load_project(cd.load_config(root))
+    proj.cfg.stale_hours = 24
+    now = datetime(2026, 9, 15, 12, 0, tzinfo=timezone.utc)
+    assert "W001" not in codes(cd.check(proj, now=now))
+
+
+def test_w001_claim_without_stamp(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/plans/M1/M1-01-runtime-loop.md": (
+            "- 2026-09-15T09:00Z — claude-code — feat/M1-01-runtime-loop", ""),
+    })
+    assert "W001" in codes(cd.run(root))
+
+
+def test_run_stale_hours_override(tmp_path):
+    root = make_project(tmp_path)
+    assert "W001" in codes(cd.run(root, stale_hours=0.001))
