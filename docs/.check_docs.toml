@@ -1,0 +1,4 @@
+# Config for running tools/check_docs.py on this kit's own repo.
+allow_tbd_in = ["docs/superpowers/"]
+citation_exclude = ["templates/", "tools/tests/fixture/", "docs/superpowers/"]
+exclude = ["tools/tests/fixture"]
