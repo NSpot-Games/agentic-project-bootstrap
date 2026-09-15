@@ -66,6 +66,109 @@ def load_config(root: Path) -> Config:
     return cfg
 
 
+# --------------------------------------------------------------------------- markdown helpers
+
+HEADING_RE = re.compile(r"^(#{1,6})[ \t]+(.*?)[ \t]*$", re.M)
+NUMBERED_RE = re.compile(r"^(\d+(?:\.\d+)*[a-z]?)\.?(?=\s)")
+# A citation is `path/to/file.md` optionally followed by `§N.M`. The lookbehind rejects
+# tokens glued to template braces, angle brackets, a hyphen, a slash, a dot or a colon,
+# so `{{x}}-design.md`, `M<n>.md`, `<file>.md` and `https://example.com/x.md` never match.
+CITE_RE = re.compile(
+    r"(?<![\w{}<>\-/.:])((?:[\w.-]+/)*[A-Za-z0-9_][\w.-]*\.md)(?:[ \t]*§[ \t]*(\d+(?:\.\d+)*[a-z]?))?"
+)
+
+
+def read_text(path: Path) -> str:
+    return path.read_text(encoding="utf-8").replace("\r\n", "\n")
+
+
+def rel(cfg: Config, path: Path) -> str:
+    return path.resolve().relative_to(cfg.root.resolve()).as_posix()
+
+
+def _excluded(cfg: Config, relpath: str) -> bool:
+    parts = relpath.split("/")
+    for e in cfg.exclude:
+        e = e.strip("/")
+        if "/" in e:
+            if relpath == e or relpath.startswith(e + "/"):
+                return True
+        elif e in parts:
+            return True
+    return False
+
+
+def iter_md(cfg: Config) -> list[Path]:
+    return [p for p in sorted(cfg.root.rglob("*.md")) if not _excluded(cfg, rel(cfg, p))]
+
+
+def line_of(text: str, pos: int) -> int:
+    return text.count("\n", 0, pos) + 1
+
+
+def numbered_headings(text: str) -> set[str]:
+    out: set[str] = set()
+    for m in HEADING_RE.finditer(text):
+        n = NUMBERED_RE.match(m.group(2) + " ")
+        if n:
+            out.add(n.group(1))
+    return out
+
+
+def first_heading(text: str) -> str:
+    m = HEADING_RE.search(text)
+    return m.group(2).strip() if m else ""
+
+
+def field_value(text: str, name: str) -> str | None:
+    """Value of a `**Name:** value` line, or None if absent. Empty and dash values become ''."""
+    m = re.search(rf"^\*\*{re.escape(name)}:\*\*[ \t]*(.*?)[ \t]*$", text, re.M)
+    if not m:
+        return None
+    v = m.group(1).strip()
+    return "" if v in ("", "—", "-", "n/a") else v
+
+
+def section_body(text: str, title: str) -> str:
+    """Body of the `## title` section, up to the next `## ` heading."""
+    m = re.search(rf"^## {re.escape(title)}[ \t]*$\n?(.*?)(?=^## |\Z)", text, re.M | re.S)
+    return m.group(1) if m else ""
+
+
+# --------------------------------------------------------------------------- checks: citations
+
+
+def _resolve_citation(cfg: Config, citing: Path, target: str) -> Path | None:
+    for base in (citing.parent, cfg.root, cfg.docs):
+        cand = base / target
+        if cand.is_file():
+            return cand
+    return None
+
+
+def check_citations(cfg: Config, md_files: list[Path]) -> list[Finding]:
+    out: list[Finding] = []
+    heading_cache: dict[Path, set[str]] = {}
+    for path in md_files:
+        r = rel(cfg, path)
+        if any(r == x.strip("/") or r.startswith(x.strip("/") + "/") for x in cfg.citation_exclude):
+            continue
+        text = read_text(path)
+        for m in CITE_RE.finditer(text):
+            target, anchor = m.group(1), m.group(2)
+            resolved = _resolve_citation(cfg, path, target)
+            if resolved is None:
+                out.append(Finding("E001", r, line_of(text, m.start()), f"cited file missing: {target}"))
+                continue
+            if anchor:
+                if resolved not in heading_cache:
+                    heading_cache[resolved] = numbered_headings(read_text(resolved))
+                if anchor not in heading_cache[resolved]:
+                    out.append(Finding("E002", r, line_of(text, m.start()),
+                                       f"no heading §{anchor} in {target}"))
+    return out
+
+
 # --------------------------------------------------------------------------- run / main
 
 
@@ -73,7 +176,10 @@ def run(root: Path, fix: bool = False, stale_hours: float | None = None) -> list
     cfg = load_config(Path(root))
     if stale_hours is not None:
         cfg.stale_hours = stale_hours
-    return []
+    md_files = iter_md(cfg)
+    findings: list[Finding] = []
+    findings += check_citations(cfg, md_files)
+    return findings
 
 
 def main(argv: list[str] | None = None) -> int:

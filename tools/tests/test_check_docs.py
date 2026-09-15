@@ -52,3 +52,43 @@ def test_finding_str():
     assert str(f) == "docs/a.md:3: E001 cited file missing: b.md"
     assert f.is_error
     assert not cd.Finding("W001", "x", 1, "m").is_error
+
+
+def test_e001_missing_cited_file(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/WORKFLOW.md": ("`docs/design/product-design.md §3`", "`docs/design/missing.md §3`"),
+    })
+    assert "E001" in codes(cd.run(root))
+
+
+def test_e002_missing_section(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/WORKFLOW.md": ("`docs/design/product-design.md §3`", "`docs/design/product-design.md §9.9`"),
+    })
+    assert "E002" in codes(cd.run(root))
+
+
+def test_citation_resolves_relative_to_citing_file(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/WORKFLOW.md": ("`docs/design/product-design.md §3`", "`design/product-design.md §3`"),
+    })
+    assert errors(cd.run(root)) == []
+
+
+def test_citation_with_lettered_anchor_resolves(tmp_path):
+    root = make_project(tmp_path)
+    # M1-01 plan cites §2.1a which exists
+    assert errors(cd.run(root)) == []
+
+
+def test_template_tokens_angle_brackets_and_urls_are_not_citations(tmp_path):
+    root = make_project(tmp_path, {
+        "docs/GLOSSARY.md": ("## Core", "## Core\nWrite `<product>-design.md`, `M<n>.md`, `<file>.md §N.M`, "
+                                        "or see https://example.com/guide.md for more.\n"),
+    })
+    assert not any(c in ("E001", "E002") for c in codes(cd.run(root)))
+
+
+def test_numbered_headings():
+    text = "# T\n## 1. One\n### 1.2 Two\n### 1.2a Two-a\n## Changelog\n"
+    assert cd.numbered_headings(text) == {"1", "1.2", "1.2a"}
