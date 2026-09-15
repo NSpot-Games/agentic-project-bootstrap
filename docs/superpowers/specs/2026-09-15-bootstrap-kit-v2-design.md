@@ -57,7 +57,7 @@ agentic-project-bootstrap/
     OPEN-QUESTIONS.md  CURRENT.md  roadmap.md  milestone.md  plan.md
     adr.md  decisions-AGENTS.md  design-header.md  evidence.md
   tools/
-    check_docs.py           linter and generator, Python 3.10+, standard library only
+    check_docs.py           linter and generator, Python 3.11+, standard library only
     hooks/README.md         settings.json snippet running check_docs on session Stop
     tests/
       test_check_docs.py    pytest
@@ -193,7 +193,7 @@ Every profile shares the machinery and the reference files. A profile specifies:
 
 ## 12. The linter and generator
 
-`tools/check_docs.py`, Python 3.10+, standard library only. Invoked as `check_docs.py [--fix] [--root PATH] [--stale-hours N]`.
+`tools/check_docs.py`, Python 3.11+, standard library only. Invoked as `check_docs.py [--fix] [--root PATH] [--stale-hours N]`.
 
 Checks, each with a stable error code:
 
@@ -203,7 +203,7 @@ Checks, each with a stable error code:
 | E002 | A cited `path.md §N.M` has no heading numbered `N.M` |
 | E003 | A milestone file is missing from the index or its status differs |
 | E004 | An ADR file is missing from its index |
-| E005 | `{{`, `TBD`, or the codename placeholder appears outside `OPEN-QUESTIONS.md` or a `sketch` roadmap section |
+| E005 | `{{`, `TBD`, or the configured `codename_placeholder` appears in a project doc outside `OPEN-QUESTIONS.md`, an `allow_tbd_in` path, or a `sketch` roadmap section |
 | E006 | A plan is `done` but its feature is unticked, or ticked with a plan not `done` |
 | E007 | A milestone is `done` with an unticked feature or without an evidence link |
 | E008 | A `planned` or `in progress` item depends on a `sketch` or `dropped` item |
@@ -215,7 +215,7 @@ Checks, each with a stable error code:
 
 `--fix` regenerates `milestones/README.md`, `plans/README.md`, `decisions/README.md`, and `CURRENT.md`. Generated files begin with a marker line stating they are generated and by what. `--fix` never touches any other file. Exit code is non-zero on any `E` code, zero otherwise; warnings print but pass.
 
-Configuration: a `docs/.check_docs.toml` with `codename`, `stale_hours`, `allow_tbd_in`, `tier`. Defaults work without a config file; tier defaults to `standard` and is auto-detected as `lite` when `docs/milestones/` is absent. When neither `docs/milestones/` nor `docs/roadmap.md` exists (as in this kit's own repo), only the cross-reference and placeholder checks (E001, E002, E005) run.
+Configuration: a `docs/.check_docs.toml` with `codename_placeholder`, `stale_hours`, `allow_tbd_in`, `citation_exclude`, `exclude`, `tier`. Defaults work without a config file; tier defaults to `standard` and is auto-detected as `lite` when `docs/milestones/` is absent. When neither `docs/milestones/` nor `docs/roadmap.md` exists (as in this kit's own repo), only the cross-reference and placeholder checks (E001, E002, E005) run.
 
 Tests: `tools/tests/fixture/valid/` is a minimal standard-tier project that passes. Each error code has a sibling fixture variant that fails with exactly that code. Tests cover `--fix` output equality and idempotence.
 
