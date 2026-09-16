@@ -106,7 +106,8 @@ def _run_stop(cwd: Path, stdin: str) -> subprocess.CompletedProcess:
     return subprocess.run(["sh", str(STOP_SH)], input=stdin, capture_output=True, text=True, cwd=cwd, env=env)
 
 
-needs_sh = pytest.mark.skipif(shutil.which("sh") is None, reason="no sh on PATH")
+SH = shutil.which("sh")
+needs_sh = pytest.mark.skipif(SH is None, reason="no sh on PATH")
 
 # Claude Code writes compact JSON (no space after the colon); the hook must recognize both.
 STOP_ACTIVE_JSON = ['{"stop_hook_active": true}', '{"stop_hook_active":true}']
@@ -123,6 +124,25 @@ def test_stop_hook_exits_zero_when_stop_hook_active(tmp_path, stdin):
 
 @needs_sh
 def test_stop_hook_exits_zero_when_project_has_no_linter(tmp_path):
+    r = _run_stop(tmp_path, "{}")
+    assert r.returncode == 0, r.stderr
+
+
+@needs_sh
+def test_stop_hook_skips_when_no_python_interpreter(tmp_path, tmp_path_factory):
+    (tmp_path / "tools").mkdir()
+    (tmp_path / "tools" / "check_docs.py").write_text("import sys; sys.exit(1)\n", encoding="utf-8")
+    empty_dir = tmp_path_factory.mktemp("empty-path")
+    env = {**os.environ, "CLAUDE_PROJECT_DIR": str(tmp_path), "PATH": str(empty_dir)}
+    r = subprocess.run([SH, str(STOP_SH)], input="{}", capture_output=True, text=True, cwd=tmp_path, env=env)
+    assert r.returncode == 0, r.stderr
+    assert "no python interpreter" in r.stdout + r.stderr
+
+
+@needs_sh
+def test_stop_hook_exits_zero_when_python_passing(tmp_path):
+    (tmp_path / "tools").mkdir()
+    (tmp_path / "tools" / "check_docs.py").write_text("import sys; sys.exit(0)\n", encoding="utf-8")
     r = _run_stop(tmp_path, "{}")
     assert r.returncode == 0, r.stderr
 
@@ -147,8 +167,10 @@ def test_stop_hook_blocks_when_stop_hook_active_is_false(tmp_path):
 
 @needs_sh
 def test_stop_hook_does_not_crash_on_non_json_stdin(tmp_path):
+    (tmp_path / "tools").mkdir()
+    (tmp_path / "tools" / "check_docs.py").write_text("import sys; sys.exit(1)\n", encoding="utf-8")
     r = _run_stop(tmp_path, "")
-    assert r.returncode in (0, 2)
+    assert r.returncode == 2, r.stderr
 
 
 PROJECT_STOP_SH = SKILL_DIR / "scripts" / "hooks" / "stop.sh"
@@ -178,8 +200,62 @@ def test_project_stop_hook_blocks_when_stop_hook_active_is_false(tmp_path):
 
 @needs_sh
 def test_project_stop_hook_does_not_crash_on_non_json_stdin(tmp_path):
+    (tmp_path / "tools").mkdir()
+    (tmp_path / "tools" / "check_docs.py").write_text("import sys; sys.exit(1)\n", encoding="utf-8")
     r = _run_project_stop(tmp_path, "")
-    assert r.returncode in (0, 2)
+    assert r.returncode == 2, r.stderr
+
+
+@needs_sh
+def test_project_stop_hook_exits_zero_when_python_passing(tmp_path):
+    (tmp_path / "tools").mkdir()
+    (tmp_path / "tools" / "check_docs.py").write_text("import sys; sys.exit(0)\n", encoding="utf-8")
+    r = _run_project_stop(tmp_path, "{}")
+    assert r.returncode == 0, r.stderr
+
+
+@needs_sh
+def test_project_stop_hook_skips_when_no_python_interpreter(tmp_path, tmp_path_factory):
+    (tmp_path / "tools").mkdir()
+    (tmp_path / "tools" / "check_docs.py").write_text("import sys; sys.exit(1)\n", encoding="utf-8")
+    empty_dir = tmp_path_factory.mktemp("empty-path-project")
+    env = {**os.environ, "PATH": str(empty_dir)}
+    r = subprocess.run([SH, str(PROJECT_STOP_SH)], input="{}", capture_output=True, text=True, cwd=tmp_path, env=env)
+    assert r.returncode == 0, r.stderr
+    assert "no python interpreter" in r.stdout + r.stderr
+
+
+def test_hooks_readme_snippet_matches_project_script():
+    readme = _text(SKILL_DIR / "scripts" / "hooks" / "README.md")
+    m = re.search(r"```sh\n(#!/bin/sh\n.*?)```", readme, re.S)
+    assert m, "no ```sh fenced block starting with #!/bin/sh found in README.md"
+    fence = m.group(1).rstrip("\n")
+    script = _text(PROJECT_STOP_SH).rstrip("\n")
+    assert fence == script
+
+
+def test_skill_lints_clean_when_copied_alone(tmp_path):
+    copy = tmp_path / "project-bootstrap"
+    shutil.copytree(SKILL_DIR, copy, ignore=shutil.ignore_patterns("__pycache__"))
+    (copy / "docs").mkdir(exist_ok=True)
+    (copy / "docs" / ".check_docs.toml").write_text(
+        'citation_exclude = ["assets/templates/"]\n'
+        'exclude = ["assets/templates"]\n',
+        encoding="utf-8",
+    )
+    r = subprocess.run(
+        [sys.executable, "scripts/check_docs.py", "--root", "."],
+        cwd=copy,
+        capture_output=True,
+        text=True,
+    )
+    bad_lines = []
+    for line in (r.stdout + r.stderr).splitlines():
+        if "E001" in line or "E002" in line:
+            if "E001" in line and "SKILL.md" in line and "BOOTSTRAP.md" in line:
+                continue
+            bad_lines.append(line)
+    assert bad_lines == [], "unexpected citation errors:\n" + "\n".join(bad_lines) + "\n\nfull output:\n" + r.stdout + r.stderr
 
 
 def test_skill_directory_works_when_copied_alone(tmp_path):
