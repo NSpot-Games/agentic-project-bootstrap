@@ -195,6 +195,7 @@ so neither path is declared.
 ```json
 {
   "name": "agentic-project-bootstrap",
+  "description": "Docs-as-contract bootstrap kit for agent-driven projects.",
   "owner": { "name": "NSpotGames", "url": "https://github.com/NSpotGames" },
   "plugins": [
     {
@@ -244,16 +245,21 @@ with the slash-command equivalents `/plugin marketplace add …` and `/plugin in
 # Plugin-level Stop hook. Runs the project's own copy of the linter, and only in projects
 # that have one, so repos not built on the kit are never linted.
 input=$(cat)
-case "$input" in *'"stop_hook_active": true'*) exit 0;; esac
 root="${CLAUDE_PROJECT_DIR:-.}"
 [ -f "$root/tools/check_docs.py" ] || exit 0
-py=python3; command -v python3 >/dev/null 2>&1 || py=python
+py=python3
+"$py" -c "pass" >/dev/null 2>&1 || py=python
+"$py" -c "pass" >/dev/null 2>&1 || { echo 'check_docs: no python interpreter found; skipping'; exit 0; }
+if printf '%s' "$input" | "$py" -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("stop_hook_active") else 1)' 2>/dev/null; then exit 0; fi
 "$py" "$root/tools/check_docs.py" --root "$root" \
   || { echo 'check_docs found errors; fix them before ending the session'; exit 2; }
 ```
 
-Two properties the plan must preserve: exit 0 when `stop_hook_active` is true; exit 0 when
-the project has no `tools/check_docs.py`.
+The guard parses stdin as JSON because Claude Code writes compact JSON; when no Python
+interpreter is on PATH the hook exits 0 rather than block.
+
+Three properties the plan must preserve: exit 0 when `stop_hook_active` is true; exit 0 when
+the project has no `tools/check_docs.py`; exit 0 when no Python interpreter is on PATH.
 
 ### 8d. Manual
 
@@ -338,12 +344,13 @@ New file `tests/test_skill_package.py`, stdlib only:
 3. `python skills/project-bootstrap/scripts/check_docs.py --root tests/fixture/valid --fix`
    produces no diff.
 4. No file under `skills/project-bootstrap/` cites a path outside the skill directory except
-   through the `<project>/` convention.
+   through the `<project>/` convention, except the trigger phrase `BOOTSTRAP.md` in the
+   skill's frontmatter description.
 5. `core/`, `profiles/`, `templates/`, `tools/`, `skills/bootstrap/` no longer exist.
 6. `git log --follow` on a moved file shows its pre-move history.
 7. Copying `skills/project-bootstrap/` alone into an empty directory and running
    `python scripts/check_docs.py --help` from inside it works, and every path cited in
    `SKILL.md` exists in that copy.
 8. `plugin.json`, `marketplace.json`, `hooks.json` are valid JSON; `hooks/stop.sh` satisfies
-   the two exit-0 properties in §8c.
+   the three exit-0 properties in §8c.
 9. Version `2.1.0` agrees in all three places.
