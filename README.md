@@ -17,18 +17,18 @@ or just read it.
 and others):
 
 ```
-npx skills add NSpotGames/agentic-project-bootstrap
+npx skills add NSpot-Games/agentic-project-bootstrap
 ```
 
 **Claude Code, as a plugin** (adds a Stop hook that runs the linter in projects built on the
 kit):
 
 ```
-claude plugin marketplace add NSpotGames/agentic-project-bootstrap
+claude plugin marketplace add NSpot-Games/agentic-project-bootstrap
 claude plugin install project-bootstrap@agentic-project-bootstrap
 ```
 
-or `/plugin marketplace add NSpotGames/agentic-project-bootstrap` and
+or `/plugin marketplace add NSpot-Games/agentic-project-bootstrap` and
 `/plugin install project-bootstrap@agentic-project-bootstrap` inside a session.
 
 **By hand:** clone this repo and copy `skills/project-bootstrap/` into your agent's skills
