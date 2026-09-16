@@ -4,8 +4,8 @@
   "version": "2.1.0",
   "description": "Docs-as-contract bootstrap for agent-driven projects: design docs, milestones, plans, ADRs, and a linter that keeps them true.",
   "author": { "name": "NSpotGames", "url": "https://github.com/NSpot-Games" },
-  "homepage": "https://github.com/NSpot-Games/agentic-project-bootstrap",
-  "repository": "https://github.com/NSpot-Games/agentic-project-bootstrap",
+  "homepage": "https://github.com/NSpot-Games/project-bootstrap",
+  "repository": "https://github.com/NSpot-Games/project-bootstrap",
   "license": "MIT",
   "keywords": ["skills", "bootstrap", "documentation", "planning", "adr", "milestones", "workflow"]
 }

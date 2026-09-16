@@ -1,4 +1,4 @@
-# agentic-project-bootstrap
+# project-bootstrap
 
 A bootstrap kit: docs, templates, and a linter that a software project copies in, or is pointed
 at, so a human and their AI agents — Claude Code, Codex, others — share one set of design docs,
@@ -17,19 +17,19 @@ or just read it.
 and others):
 
 ```
-npx skills add NSpot-Games/agentic-project-bootstrap
+npx skills add NSpot-Games/project-bootstrap
 ```
 
 **Claude Code, as a plugin** (adds a Stop hook that runs the linter in projects built on the
 kit):
 
 ```
-claude plugin marketplace add NSpot-Games/agentic-project-bootstrap
-claude plugin install project-bootstrap@agentic-project-bootstrap
+claude plugin marketplace add NSpot-Games/project-bootstrap
+claude plugin install project-bootstrap@project-bootstrap
 ```
 
-or `/plugin marketplace add NSpot-Games/agentic-project-bootstrap` and
-`/plugin install project-bootstrap@agentic-project-bootstrap` inside a session.
+or `/plugin marketplace add NSpot-Games/project-bootstrap` and
+`/plugin install project-bootstrap@project-bootstrap` inside a session.
 
 **By hand:** clone this repo and copy `skills/project-bootstrap/` into your agent's skills
 directory (`.claude/skills/`, `.agents/skills/`, `~/.codex/skills/`, or wherever it reads

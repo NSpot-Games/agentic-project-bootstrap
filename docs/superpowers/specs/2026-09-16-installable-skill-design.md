@@ -7,7 +7,7 @@
 ## 1. Purpose
 
 Make the kit's skill installable into any agent harness the way the large public skill
-repositories are: `npx skills add NSpot-Games/agentic-project-bootstrap` for the forty-plus
+repositories are: `npx skills add NSpot-Games/project-bootstrap` for the forty-plus
 agents the `skills` CLI supports, and `claude plugin install` for Claude Code. Today the skill
 at `skills/bootstrap/SKILL.md` cites `core/`, `profiles/`, `templates/` and
 `tools/check_docs.py` relative to the repo root; every installer copies only the skill
@@ -166,7 +166,7 @@ No repo-side configuration. The CLI discovers `skills/*/SKILL.md`, requires `nam
 `.agents/skills/`. README documents:
 
 ```
-npx skills add NSpot-Games/agentic-project-bootstrap
+npx skills add NSpot-Games/project-bootstrap
 ```
 
 ### 8b. Claude Code plugin
@@ -180,8 +180,8 @@ npx skills add NSpot-Games/agentic-project-bootstrap
   "version": "2.1.0",
   "description": "Docs-as-contract bootstrap for agent-driven projects: design docs, milestones, plans, ADRs, and a linter that keeps them true.",
   "author": { "name": "NSpotGames", "url": "https://github.com/NSpot-Games" },
-  "homepage": "https://github.com/NSpot-Games/agentic-project-bootstrap",
-  "repository": "https://github.com/NSpot-Games/agentic-project-bootstrap",
+  "homepage": "https://github.com/NSpot-Games/project-bootstrap",
+  "repository": "https://github.com/NSpot-Games/project-bootstrap",
   "license": "MIT",
   "keywords": ["skills", "bootstrap", "documentation", "planning", "adr", "milestones", "workflow"]
 }
@@ -194,7 +194,7 @@ so neither path is declared.
 
 ```json
 {
-  "name": "agentic-project-bootstrap",
+  "name": "project-bootstrap",
   "description": "Docs-as-contract bootstrap kit for agent-driven projects.",
   "owner": { "name": "NSpotGames", "url": "https://github.com/NSpot-Games" },
   "plugins": [
@@ -211,8 +211,8 @@ so neither path is declared.
 README documents:
 
 ```
-claude plugin marketplace add NSpot-Games/agentic-project-bootstrap
-claude plugin install project-bootstrap@agentic-project-bootstrap
+claude plugin marketplace add NSpot-Games/project-bootstrap
+claude plugin install project-bootstrap@project-bootstrap
 ```
 
 with the slash-command equivalents `/plugin marketplace add …` and `/plugin install …`.
